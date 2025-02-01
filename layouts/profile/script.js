@@ -749,6 +749,21 @@ async function renderFollowing(clear = true, cursor) {
     loadingFollowing = false;
     followingMoreBtn.innerText = LOC.load_more.message;
 }
+var toggableBtnBlocked = false;
+document.getElementById("hide-unblocked").addEventListener("click", hide_unblocked);
+function hide_unblocked()  {
+    var divsToHide = document.getElementsByClassName("not-blocked"); //divsToHide is an array
+    if(!toggableBtnBlocked) {
+    for(var i = 0; i < divsToHide.length; i++){
+        divsToHide[i].parentElement.style.display = "none";
+        toggableBtnBlocked= true;
+    }}
+    else {
+    for(var i = 0; i < divsToHide.length; i++){
+        divsToHide[i].parentElement.style.display = "block";
+        toggableBtnBlocked= false;
+    }}
+}
 let unsaved = false;
 async function renderFollowers(clear = true, cursor) {
     loadingFollowers = true;
