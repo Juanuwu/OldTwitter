@@ -1536,6 +1536,8 @@ async function appendUser(u, container, label, usernameClass = '') {
     }
 
     userElement.innerHTML = html`
+        <div${vars.extensionCompatibilityMode ? ' data-testid="UserCell"' : ''}>
+            ${vars.extensionCompatibilityMode ? `<a href="/${u.screen_name}" style="display: none;"></a><a style="display: none;">${escapeHTML(u.name)}</a>` : ''}
         <div class="${u.blocking ? '' : 'not-blocked'}">
             <a href="/${u.screen_name}" class="user-item-link">
                 <img src="${(u.default_profile_image && vars.useOldDefaultProfileImage) ? chrome.runtime.getURL(`images/default_profile_images/default_profile_${Number(u.id_str) % 7}_normal.png`): u.profile_image_url_https}" alt="${u.screen_name}" class="user-item-avatar tweet-avatar" width="48" height="48">
@@ -3701,6 +3703,7 @@ async function appendTweet(t, timelineContainer, options = {}) {
                 video.currentTime = 0;
                 video.loop = false;
                 let isFirst = true;
+                let step = 50;
                 let interval = setInterval(async () => {
                     if(isFirst) {
                         video.currentTime = 0;
@@ -3708,7 +3711,7 @@ async function appendTweet(t, timelineContainer, options = {}) {
                         await sleep(5);
                     }
                     mde.innerText = `${LOC.initialization.message}... (${Math.round(video.currentTime/video.duration*100|0)}%)`;
-                    if (video.currentTime+0.1 >= video.duration) {
+                        if (video.currentTime+(step/1000) >= video.duration) {
                         clearInterval(interval);
                         gif.on('working', (frame, frames) => {
                             mde.innerText = `${LOC.converting.message}... (${frame}/${frames})`;
@@ -3751,8 +3754,8 @@ async function appendTweet(t, timelineContainer, options = {}) {
                     }
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    gif.addFrame(imgData, { delay: 100 });
-                }, 100);
+                    gif.addFrame(imgData, { delay: step });
+                }, step);
             }));
         }
         if(tweetInteractMoreMenuFeedbacks) tweetInteractMoreMenuFeedbacks.forEach(feedbackButton => {
