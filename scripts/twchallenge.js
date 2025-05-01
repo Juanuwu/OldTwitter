@@ -14,6 +14,14 @@ let sandboxUrl = fetch(chrome.runtime.getURL(`sandbox.html`))
 function createSolverFrame() {
     if (solverIframe) solverIframe.remove();
     solverIframe = document.createElement('iframe');
+    //display:none causes animations to not play which breaks the challenge solver, so have to hide it in different way
+    solverIframe.style.position = 'absolute';
+    solverIframe.width = '0px';
+    solverIframe.height = '0px';
+    solverIframe.style.border = 'none';
+    solverIframe.style.opacity = 0;
+    solverIframe.style.pointerEvents = 'none';
+    solverIframe.tabIndex = -1;
     solverIframe.style.display = 'none';
     sandboxUrl.then(url => solverIframe.src = url);
     let injectedBody = document.getElementById('injected-body');
