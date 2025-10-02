@@ -2120,6 +2120,7 @@ async function appendUser(u, container, label, usernameClass = "") {
     }
 
     userElement.innerHTML = html`
+        <div class="${u.blocking ? '' : 'not-blocked'}">
         <div${vars.extensionCompatibilityMode ? ' data-testid="UserCell"' : ""}>
             ${
                 vars.extensionCompatibilityMode
