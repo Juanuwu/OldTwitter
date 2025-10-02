@@ -2097,6 +2097,28 @@ async function appendUser(u, container, label, usernameClass = "") {
         delete u.verified_type;
         u.verified = false;
     }
+    
+    let followed_by_friend = false;
+    if(u.blocking) {
+    cursor = undefined;
+    loadingFollowersouKnow = true;
+    let following;
+    try {
+        following = await API.user.getFollowersYouFollow(u.id_str, cursor);
+    } catch(e) {
+        console.error(e);
+        loadingFollowersYouKnow = false;
+        followersYouFollowMoreBtn.innerText = LOC.load_more.message;
+        return;
+    }
+    followersYouKnowCursor = following.cursor;
+    following = following.list;
+    if(following.length != 0) {
+        followed_by_friend = true;
+    }
+    loadingFollowersYouKnow = false;
+    }
+
     userElement.innerHTML = html`
         <div${vars.extensionCompatibilityMode ? ' data-testid="UserCell"' : ""}>
             ${

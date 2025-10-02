@@ -649,4 +649,5 @@
     "hide_original_languages":{"message": "Ocultar el idioma original al traducir" },
 	"blocked": { "message": "Bloqueado" },
 	"use_retweeted_id": { "message": "Al dar \"Me gusta\" o retweetear un retweet, notificar al usuario que lo retweeteó." }
+
 }

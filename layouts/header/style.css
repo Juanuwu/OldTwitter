@@ -2069,6 +2069,12 @@ emoji-picker {
     margin-left: 5px;
     font-weight: 100;
 }
+.user-followed-by-friend::before {
+    content: "\f176";
+    color: var(--link-color);
+    font-weight: 100;
+    font: 17px var(--icon-font);
+}
 
 .user-indicator-no-status::after {
     content: "\f045";
