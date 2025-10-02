@@ -19,7 +19,7 @@
     "terms": { "message": "Conditions", "description": "Shortest word that you can find for Terms of service" },
     "privacy": { "message": "Confidentialité", "description": "Shortest word that you can find for Privacy policy" },
     "about": { "message": "À propos" },
-    "donate": { "message": "Faire un don" },
+    "donate": { "message": "Soutenir" },
     "home": { "message": "Accueil", "description": "This is for navbar menu. If no appropriate word, you can use something like Feed or Timeline" },
     "notifications": { "message": "Notifications" },
     "messages": { "message": "Messages" },
@@ -183,7 +183,7 @@
     "algo": { "message": "Algorithmique" },
     "timeline_type": { "message": "Type de chronologie" },
     "show_topic_tweets": { "message": "Afficher les tweets de sujet (algorithme seulement)" },
-    "show_colors_in_timeline": { "message": "Afficher les couleurs des liens des utilisateurs dans la chronologie d'accueil" },
+    "slow_show_colors_in_timeline": { "message": "Show custom link colors of users in home timeline (This can cause slow downs on some devices!)" },
     "always_show_link_color": { "message": "Toujours afficher les couleurs des liens personnalisés plutôt que de les afficher au survol" },
     "enable_twemoji": { "message": "Activer Twemoji" },
     "hearts_instead_stars": { "message": "Afficher des cœurs (J'aime) à la place d'étoiles (Favoris)" },
@@ -646,5 +646,6 @@
     "suspended_user": { "message": "Compte suspendu" },
     "suspended_user_desc": { "message": "Le profil que vous essayez de voir est suspendu." },
     "show_boring_indicators": { "message": "Afficher un indicateur sur la page des abonnés/abonnements si le dernier tweet de la personne est un retweet, une citation, inexistant ou ancien" },
-    "hide_original_languages":{"message": "Cacher le message original lorsqu'il est traduit" }
+    "hide_original_languages":{"message": "Cacher le message original lorsqu'il est traduit" },
+	"blocked": { "message": "bloqué.e" }
 }

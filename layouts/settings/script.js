@@ -261,7 +261,7 @@ setTimeout(async () => {
 	);
     let linkColor = document.getElementById('link-color');
     let heartsNotStars = document.getElementById('hearts-instead-stars');
-    let linkColorsInTL = document.getElementById('link-colors-in-tl');
+    let slowLinkColorsInTL = document.getElementById('slow-link-colors-in-tl');
     let alwaysShowLinkColor = document.getElementById('always-show-link-color');
     let enableTwemoji = document.getElementById('enable-twemoji');
     let enableHashflags = document.getElementById('enable-hashflags');
@@ -335,6 +335,7 @@ setTimeout(async () => {
     let hideUnfollowersPage = document.getElementById('hide-unfollowers-page');
     let transitionProfileBanner = document.getElementById('transition-profile-banner');
     let showBoringIndicators = document.getElementById('show-boring-indicators');
+    let useRetweetedId = document.getElementById('use-retweeted-id');
 
     let root = document.querySelector(":root");
     {
@@ -522,9 +523,9 @@ setTimeout(async () => {
             disableProfileCustomizations: disableProfileCustomizations.checked
         }, () => { });
     });
-    linkColorsInTL.addEventListener('change', () => {
+    slowLinkColorsInTL.addEventListener('change', () => {
         chrome.storage.sync.set({
-            linkColorsInTL: linkColorsInTL.checked
+            slowLinkColorsInTL: slowLinkColorsInTL.checked
         }, () => { });
     });
     alwaysShowLinkColor.addEventListener('change', () => {
@@ -739,6 +740,12 @@ setTimeout(async () => {
         vars.showBoringIndicators = showBoringIndicators.checked;
         chrome.storage.sync.set({
             showBoringIndicators: showBoringIndicators.checked
+        }, () => { });
+    });
+    useRetweetedId.addEventListener('change', () => {
+        vars.useRetweetedId = useRetweetedId.checked;
+        chrome.storage.sync.set({
+            useRetweetedId: useRetweetedId.checked
         }, () => { });
     });
     hideTrends.addEventListener('change', () => {
@@ -1018,7 +1025,7 @@ setTimeout(async () => {
         root.style.setProperty('--icon-font', `"edgeicons", "RosettaIcons"`);
     }
     heartsNotStars.checked = !!vars.heartsNotStars;
-    linkColorsInTL.checked = !!vars.linkColorsInTL;
+    slowLinkColorsInTL.checked = !!vars.slowLinkColorsInTL;
     alwaysShowLinkColor.checked = !!vars.alwaysShowLinkColor;
     enableTwemoji.checked = !!vars.enableTwemoji;
     enableHashflags.checked = !!vars.enableHashflags;
@@ -1075,6 +1082,8 @@ setTimeout(async () => {
     hideUnfollowersPage.checked = !!vars.hideUnfollowersPage;
     transitionProfileBanner.checked = !!vars.transitionProfileBanner;
     showBoringIndicators.checked = !!vars.showBoringIndicators;
+    useRetweetedId.checked = !!vars.useRetweetedId;
+    disableProfileCustomizations.checked = !!vars.disableProfileCustomizations;
     if(vars.customCSS) {
         writeCSSToDB(vars.customCSS)
     }
