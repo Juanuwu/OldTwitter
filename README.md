@@ -1,11 +1,11 @@
-# OldTwitter (2025)
+# OldTwitter (2024)
 Browser extension to return old Twitter layout from 2015 (and option to use 2018 design).  
 This extension doesn't add any CSS on top of original Twitter. It's fully original client that replaces Twitter, making it much faster than alternatives.
 
 ## Installation
 
 **Chrome, Edge, Opera, Brave & Chromium browsers:** [Chrome Web Store](https://chrome.google.com/webstore/detail/old-twitter-layout-2022/jgejdcdoeeabklepnkdbglgccjpdgpmf)  
-**Firefox:** ~~[Addons For Firefox](https://addons.mozilla.org/en-US/firefox/addon/old-twitter-layout-2022/)~~ was removed, [install manually from Github](#Manual-installation)
+**Firefox:** ~~[Addons For Firefox](https://addons.mozilla.org/en-US/firefox/addon/old-twitter-layout-2022/)~~ was removed, install manually from Github
 
 ## Donate
 
@@ -142,7 +142,6 @@ Active tweet hotkeys. On bottom-right of tweet element there's blue dot showing 
 `L` - (un)favorite/like tweet.  
 `B` - (un)bookmark tweet.  
 `T` - (un)retweet tweet.  
-`K` - (un)block tweet author
 `R` - open reply box.  
 `Q` - open quote box.  
 `C` - copy tweet image.  
@@ -185,10 +184,10 @@ Polish - lele, [nomi](https://twitter.com/youmaynomi)
 Vietnamese - [btmxh](https://github.com/btmxh)  
 Traditional Chinese - [Oliver Tzeng（曾嘉禾）](https://github.com/olivertzeng), [cirx1e](https://github.com/cirx1e)  
 Simplified Chinese - [am1006](https://github.com/am1006), [CarimoWuling](https://twitter.com/carimowuling)  
-Czech - [Menal](https://github.com/Menal226)  
+Czech - Menal  
 German - [basti564](https://twitter.com/basti564)  
 Catalan - [elmees21](https://twitter.com/elmees21), [Luna](https://twitter.com/chica_botella)  
 Swedish - [actuallyaridan](https://twitter.com/actuallyaridan)  
-Bulgarian - [saraaa7447](https://twitter.com/saraaa7447)  
+Bulgarian - [Scarlett7447](https://twitter.com/Scarlett7447)  
 Norwegian - [twistquest](https://twitter.com/twistquest)  
 Indonesian - [lorizade](https://twitter.com/lorizade), [Feerse_](https://twitter.com/Feerse_), [DaGamerFiles](https://twitter.com/DaGamerFiles), [KuchingNeko](https://twitter.com/KuchingNeko)  

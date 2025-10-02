@@ -1334,19 +1334,19 @@ span.tweet-body-text {
     height: 16px;
     margin-left: 2px;
     margin-right: 2px;
-    vertical-align: middle;
+    vertical-align: text-top;
 }
 
 .tweet-body-text-short .emoji,
 .tweet-body-text-short .hashflag {
     width: 26px !important;
     height: 26px !important;
-    vertical-align: middle !important;
+    vertical-align: text-top !important;
 }
 
 .tweet-body-text-long .emoji,
 .tweet-body-text-long .hashflag {
-    vertical-align: middle !important;
+    vertical-align: text-top !important;
 }
 
 #user-name .emoji,
@@ -1689,10 +1689,6 @@ span.tweet-body-text {
     content: "\f183"
 }
 
-.tweet-interact-more-menu-separate {
-    display: none !important;
-}
-
 .tweet-interact-more-menu-share:before {
     content: "\f185"
 }
@@ -1984,10 +1980,36 @@ emoji-picker {
     overflow-wrap: break-word;
 }
 #donate-button {
+    animation: donate 5s infinite alternate, vibrate 10s infinite linear;
     position: absolute;
+    transition: 1s;
     word-break: keep-all;
 }
-
+@keyframes donate {
+    20% {
+        color: var(--link-color)
+    }
+}
+@keyframes vibrate {
+    0% {
+        transform: translate(0, 0);
+    }
+    1% {
+        transform: translate(-2px, 1px);
+    }
+    2% {
+        transform: translate(2px, -1px);
+    }
+    3% {
+        transform: translate(-2px, 1px);
+    }
+    4% {
+        transform: translate(2px, -1px);
+    }
+    5%, 100% {
+        transform: translate(0, 0);
+    }
+}
 .tweet .tweet-header-name {
     max-width: 300px;
     display: inline-block;
@@ -2408,8 +2430,6 @@ rt.furigana {
     position: relative;
     width: 475px;
     font-family: var(--tweet-font);
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .notification-avatars {
@@ -3174,11 +3194,6 @@ video::-internal-media-controls-overlay-cast-button {
     .tweet-body-main > .tweet-interact > .tweet-interact-more {
         margin-right: 12px !important;
     }
-
-    .tweet-interact-more-menu-separate {
-        display: block !important;
-    }
-
     .navbar-new-tweet-modal {
         top: 33%;
     }

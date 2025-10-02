@@ -487,6 +487,9 @@
 	"near_you": {
 		"message": "Perto de você"
 	},
+	"advanced_search": {
+		"message": "Pesquisa avançada"
+	},
 	"save_search": {
 		"message": "Salvar essa pesquisa"
 	},
@@ -598,8 +601,8 @@
 	"show_topic_tweets": {
 		"message": "Mostrar tweets de tópicos (somente algoritmo)"
 	},
-	"slow_show_colors_in_timeline": {
-		"message": "Show custom link colors of users in home timeline (This can cause slow downs on some devices!)" 
+	"show_colors_in_timeline": {
+		"message": "Mostrar links em cores de outros usuários"
 	},
 	"enable_twemoji": {
 		"message": "Usar Twemoji"

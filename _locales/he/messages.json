@@ -509,6 +509,9 @@
     "edit_twitter_settings": {
         "message": "ערוך הגדרות טוויטר "
     },
+    "display_sensitive_content": {
+        "message": "הסר באופן אוטומטי צנזורה ממדיה שסומנה כתוכן רגיש"
+    },
     "uncensor_graphic_violence_automatically": {
         "message": "הסר באופן אוטומטי צנזורה ממדיה עם אזהרת אלימות גרפית"
     },
@@ -536,8 +539,8 @@
     "show_topic_tweets": {
         "message": "הצג ציוצי נושא (אלגוריתמי בלבד) "
     },
-    "slow_show_colors_in_timeline": {
-        "message": "Show custom link colors of users in home timeline (This can cause slow downs on some devices!)"
+    "show_colors_in_timeline": {
+        "message": "הצג קישור צבע מותאם אישית של משתמשים בציר זמן דף הבית "
     },
     "enable_twemoji": {
         "message": "הפעל Twemoji"

@@ -267,7 +267,7 @@ function updateUserData() {
             API.user.get(user_handle, false),
             API.account.verifyCredentials()
         ]).catch(e => {
-            if(String(e).includes("reading 'result'") || String(e).includes('property "result"')) {
+            if(String(e).includes("reading 'result'")) {
                 document.getElementById('loading-box').hidden = true;
                 document.getElementById('profile-name').innerText = `@${user_handle}`;
                 document.getElementById('timeline').innerHTML = html`<div class="unable_load_timeline" dir="auto" style="padding: 50px;color: var(--darker-gray); font-size: 20px;"><h2>${LOC.nonexistent_user.message}</h2><p style="font-size: 15px;" href="/${pageUser.screen_name}">${LOC.nonexistent_user_desc.message.replaceAll("$SCREEN_NAME$",pageUser.screen_name)}</p></div>`;
@@ -311,7 +311,7 @@ function updateUserData() {
         }
         if(pageUserData.reason) {
             let e = pageUserData.reason;
-            if(String(e).includes("reading 'result'") || String(e).includes('property "result"')) {
+            if(String(e).includes("reading 'result'")) {
                 document.getElementById('loading-box').hidden = true;
                 document.getElementById('profile-name').innerText = `@${user_handle}`;
                 document.getElementById('timeline').innerHTML = html`<div class="unable_load_timeline" dir="auto" style="padding: 50px;color: var(--darker-gray); font-size: 20px;"><h2>${LOC.nonexistent_user.message}</h2><p style="font-size: 15px;" href="/${pageUser.screen_name}">${LOC.nonexistent_user_desc.message.replaceAll("$SCREEN_NAME$",pageUser.screen_name)}</p></div>`;
@@ -873,20 +873,24 @@ async function renderFollowers(clear = true, cursor) {
                     if(sortedFollowers[user.id_str].followers.length === 0 || Date.now() - sortedFollowers[user.id_str].lastUpdate > 60000 * 60 * 24) {
                         let i = 0;
                         while(i < userIds.length) {
-                            let users1, users2, users3, users4, users5;
+                            let users1, users2, users3, users4, users5, users6, users7;
                             try {
                                 [
                                     users1,
                                     users2,
                                     users3,
                                     users4,
-                                    users5
+                                    users5,
+                                    users6,
+                                    users7
                                 ] = await Promise.all([
                                     API.user.lookup(userIds.slice(i, i+100)),
                                     i + 100 < userIds.length ? API.user.lookup(userIds.slice(i+100, i+200)) : [],
                                     i + 200 < userIds.length ? API.user.lookup(userIds.slice(i+200, i+300)) : [],
                                     i + 300 < userIds.length ? API.user.lookup(userIds.slice(i+300, i+400)) : [],
-                                    i + 400 < userIds.length ? API.user.lookup(userIds.slice(i+400, i+500)) : []
+                                    i + 400 < userIds.length ? API.user.lookup(userIds.slice(i+400, i+500)) : [],
+                                    i + 500 < userIds.length ? API.user.lookup(userIds.slice(i+500, i+600)) : [],
+                                    i + 600 < userIds.length ? API.user.lookup(userIds.slice(i+600, i+700)) : []
                                 ]);
                             } catch(e) {
                                 console.error(e);
@@ -894,8 +898,8 @@ async function renderFollowers(clear = true, cursor) {
                                 await sleep(1000);
                                 continue;
                             }
-                            i += 500;
-                            let users = users1.concat(users2, users3, users4, users5);
+                            i += 700;
+                            let users = users1.concat(users2, users3, users4, users5, users6, users7);
                             loadingSortedFollowers.innerText = `${LOC.loading_all_followers.message} (${i / 100} / ${Math.ceil(userIds.length / 100)})`;
                             fetchedUsers = fetchedUsers.concat(users.map(u => ([
                                 u.id_str,
@@ -931,19 +935,6 @@ async function renderFollowers(clear = true, cursor) {
                                     }
                                 }) : ''
                             ])));
-                            if(i >= userIds.length) {
-                                break;
-                            }
-                            let seconds = 60;
-                            loadingSortedFollowers.innerText = loadingSortedFollowers.innerText + ` (${seconds}s)`;
-                            let interval = setInterval(() => {
-                                seconds--;
-                                loadingSortedFollowers.innerText = loadingSortedFollowers.innerText.replace(/\(\d+s\)/, `(${seconds}s)`);
-                                if (seconds === 0) {
-                                    clearInterval(interval);
-                                }
-                            }, 1000);
-                            await sleep(seconds * 1000);
                         }
                         sortedFollowers[user.id_str].followers = fetchedUsers;
                         sortedFollowers[user.id_str].lastUpdate = Date.now();
@@ -1949,7 +1940,7 @@ document.addEventListener('findActiveTweet', () => {
         activeTweet.classList.remove('tweet-active');
     }
     let scrollPoint = scrollY + innerHeight/2;
-    activeTweet = tweets.find(t => scrollPoint > t.offsetTop && scrollPoint < t.offsetTop + t.scrollHeight);
+    activeTweet = tweets.find(t => scrollPoint > t.offsetTop && scrollPoint < t.offsetTop + t.offsetHeight);
     if(activeTweet) {
         activeTweet.classList.add('tweet-active');
     }
@@ -2054,7 +2045,7 @@ setTimeout(async () => {
         banner.style.top = `${5+Math.min(window.scrollY/4, 470/4)}px`;
     
         // load more stuff
-        if ((window.innerHeight + window.scrollY) >= document.body.scrollHeight - 1000) {
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 1000) {
             if(subpage === 'following') {
                 if(!loadingFollowing) followingMoreBtn.click();
                 return;
