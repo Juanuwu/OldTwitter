@@ -2150,7 +2150,7 @@ async function appendUser(u, container, label, usernameClass = "") {
                             : ""
                     } class="tweet-header-name user-item-name ${usernameClass} ${
         u.protected ? " user-protected" : ""
-    }${u.muting ? " user-muted" : ""}${
+    }${followed_by_friend ? ' user-followed-by-friend' : ''}${u.muting ? " user-muted" : ""}${
         u.verified || u.verified_type
             ? " user-verified"
             : u.id_str === "1708130407663759360"
