@@ -271,6 +271,7 @@ setTimeout(async () => {
     let darkModeText = document.getElementById('dark-mode-text');
     let timeMode = document.getElementById('time-mode');
     let showTopicTweets = document.getElementById('show-topic-tweets');
+    let newGallery = document.getElementById('new-gallery');
     let disableHotkeys = document.getElementById('disable-hotkeys');
     let disableRetweetHotkey = document.getElementById('disable-retweet-hotkey');
     let disableLikeHotkey = document.getElementById('disable-like-hotkey');
@@ -289,6 +290,7 @@ setTimeout(async () => {
     let displaySensitiveContent = document.getElementById('display-sensitive-content');
     let seeTweetViews = document.getElementById('see-tweet-views');
     let twitterBlueCheckmarks = document.getElementById('twitter-blue-checkmarks');
+    let showBasedIn = document.getElementById('show-based-in');
     let developerMode = document.getElementById('developer-mode');
     let copyLinksAs = document.getElementById('copy-links-as');
     let useNewIcon = document.getElementById('use-new-icon');
@@ -336,6 +338,7 @@ setTimeout(async () => {
     let transitionProfileBanner = document.getElementById('transition-profile-banner');
     let showBoringIndicators = document.getElementById('show-boring-indicators');
     let useRetweetedId = document.getElementById('use-retweeted-id');
+    let useXChat = document.getElementById('use-x-chat');
 
     let root = document.querySelector(":root");
     {
@@ -396,6 +399,13 @@ setTimeout(async () => {
         else{
             root.style.setProperty('--icon-font', `"RosettaIcons"`)
         }
+    });
+    useXChat.addEventListener('change', () => {
+        chrome.storage.sync.set({
+            useXChat: useXChat.checked
+        }, () => {
+            vars.useXChat = useXChat.checked;
+        });
     });
     linkColor.addEventListener('click', e => {
         Coloris({
@@ -595,6 +605,11 @@ setTimeout(async () => {
             showTopicTweets: showTopicTweets.checked
         }, () => { });
     });
+    newGallery.addEventListener('change', () => {
+        chrome.storage.sync.set({
+            newGallery: newGallery.checked
+        }, () => { });
+    });
     useNewIcon.addEventListener('change', () => {
         vars.useNewIcon = useNewIcon.checked;
         chrome.storage.sync.set({
@@ -701,6 +716,11 @@ setTimeout(async () => {
     twitterBlueCheckmarks.addEventListener('change', () => {
         chrome.storage.sync.set({
             twitterBlueCheckmarks: twitterBlueCheckmarks.checked
+        }, () => { });
+    });
+    showBasedIn.addEventListener('change', () => {
+        chrome.storage.sync.set({
+            showBasedIn: showBasedIn.checked
         }, () => { });
     });
     developerMode.addEventListener('change', () => {
@@ -1034,6 +1054,7 @@ setTimeout(async () => {
     hideTimelineTypes.checked = !!vars.hideTimelineTypes;
     timelineType.value = vars.timelineType ? vars.timelineType : 'chrono';
     showTopicTweets.checked = !!vars.showTopicTweets;
+    newGallery.checked = !!vars.newGallery;
     darkMode.checked = !!vars.darkMode;
     pitchBlackMode.checked = !!vars.pitchBlack;
     timeMode.checked = !!vars.timeMode && !vars.systemDarkMode;
@@ -1047,6 +1068,7 @@ setTimeout(async () => {
     displaySensitiveContent.checked = !!vars.displaySensitiveContent;
     seeTweetViews.checked = !!vars.seeTweetViews;
     twitterBlueCheckmarks.checked = !!vars.twitterBlueCheckmarks;
+    showBasedIn.checked = !!vars.showBasedIn;
     developerMode.checked = !!vars.developerMode;
     useNewIcon.checked = !!vars.useNewIcon;
     updateTimelineAutomatically.checked = !!vars.updateTimelineAutomatically;
@@ -1084,6 +1106,7 @@ setTimeout(async () => {
     showBoringIndicators.checked = !!vars.showBoringIndicators;
     useRetweetedId.checked = !!vars.useRetweetedId;
     disableProfileCustomizations.checked = !!vars.disableProfileCustomizations;
+    useXChat.checked = !!vars.useXChat;
     if(vars.customCSS) {
         writeCSSToDB(vars.customCSS)
     }
@@ -1097,7 +1120,7 @@ setTimeout(async () => {
     language.value = vars.language ? vars.language : 'en';
     document.getElementById('loc-dig').hidden = language.value !== 'zh_TW' && language.value !== 'zh_CN' && language.value !== 'ja' && language.value !== 'ko';
     autotranslationMode.value = vars.autotranslationMode;
-    copyLinksAs.value = ['twitter.com', 'fxtwitter.com', 'vxtwitter.com', 'nitter.net'].includes(vars.copyLinksAs) ? vars.copyLinksAs : 'custom';
+    copyLinksAs.value = ['twitter.com', 'fxtwitter.com', 'vxtwitter.com', 'nitter.net', 'fixupx.com', 'x.com'].includes(vars.copyLinksAs) ? vars.copyLinksAs : 'custom';
     if(vars.timeMode) {
         darkMode.disabled = true;
         darkMode.checked = isDark();
@@ -1116,8 +1139,8 @@ setTimeout(async () => {
                 <div><b>${LOC.chrono.message}</b> - ${LOC.chrono_help.message}</div>
                 <div><b>${LOC.chrono_no_retweets.message}</b> - ${LOC.chrono_no_retweets_help.message}</div>
                 <div><b>${LOC.chrono_retweets.message}</b> - ${LOC.chrono_retweets_help.message}</div>
-                <div><b>${LOC.chrono_social.message}</b> - ${LOC.chrono_social_help.message}</div>
                 <div><b>${LOC.algov2.message}</b> - ${LOC.algov2_help.message}</div>
+                <div><b>${LOC.popular_from_follows.message}</b> - ${LOC.popular_from_follows_help.message}</div>
             </div>
         `)
     });
