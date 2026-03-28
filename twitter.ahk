@@ -11,7 +11,7 @@ SetWorkingDir %A_ScriptDir%
     Sleep 100
 
     ; Select "Copy Link Address" (works for Chrome-based browsers)
-    Send {Down 7} ; Adjust based on your browser's context menu order
+    Send {Down 8} ; Adjust based on your browser's context menu order
     Send {Enter}
     Sleep 100 ; Allow time for the clipboard to update
 
