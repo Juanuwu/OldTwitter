@@ -141,9 +141,6 @@ fetch = async function (url, options) {
     if (!options.headers["x-twitter-active-user"]) {
         options.headers["x-twitter-active-user"] = "yes";
     }
-    if (!options.headers["X-Client-UUID"]) {
-        options.headers["X-Client-UUID"] = OLDTWITTER_CONFIG.deviceId;
-    }
     if (!url.startsWith("http:") && !url.startsWith("https:")) {
         let host = location.hostname;
         if (!["x.com", "twitter.com"].includes(host)) host = "x.com";
@@ -201,7 +198,8 @@ async function initChallenge() {
         ).map((svg) => svg.outerHTML);
 
         let vendorCode = homepageData.match(/vendor.(\w+).js"/)[1];
-        let challengeCode = homepageData.match(/"ondemand.s":"(\w+)"/)[1];
+        let challengePos = homepageData.match(/(\d+):"ondemand.s"/)[1];
+        let challengeCode = homepageData.match(new RegExp(`${challengePos}:"(\\w+)"`))[1];
 
         OLDTWITTER_CONFIG.verificationKey = verificationKey;
 
