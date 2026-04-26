@@ -88,10 +88,12 @@ async function loadVars() {
                 "autotranslateProfiles",
                 "roundAvatars",
                 "twitterBlueCheckmarks",
+                "showBasedIn",
                 "developerMode",
                 "copyLinksAs",
                 "useNewIcon",
                 "updateTimelineAutomatically",
+                "keepTimelinePosition",
                 "hideTrends",
                 "hideWtf",
                 "hideLikes",
@@ -142,6 +144,8 @@ async function loadVars() {
                 "customDownloadTemplate",
                 "showBoringIndicators",
                 "useRetweetedId",
+                "newGallery",
+                "useXChat"
             ],
             (data) => {
                 // default variables
@@ -235,12 +239,21 @@ async function loadVars() {
                         () => {}
                     );
                 }
+                if(data.timelineType === "chrono-social") {
+                    data.timelineType = "chrono";
+                    chrome.storage.sync.set(
+                        {
+                            timelineType: "chrono",
+                        },
+                        () => {}
+                    );
+                }
                 if (typeof data.timelineType !== "string") {
                     let type;
                     if (typeof data.chronologicalTL === "boolean") {
                         type = data.chronologicalTL ? "chrono" : "algo";
                     } else {
-                        type = "chrono-social";
+                        type = "chrono";
                     }
                     data.timelineType = type;
                     chrome.storage.sync.set(
@@ -452,7 +465,15 @@ async function loadVars() {
                         () => {}
                     );
                 }
-
+                if (typeof data.useXChat !== "boolean") {
+                    data.useXChat = true;
+                    chrome.storage.sync.set(
+                        {
+                            useXChat: true,
+                        },
+                        () => {}
+                    );
+                }
                 resolve(data);
                 varsResolve(data);
 

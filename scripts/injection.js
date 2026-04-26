@@ -42,12 +42,14 @@ let pages = [
         name: "tweet",
         paths: [
             /^\/[A-z-0-9-_]{1,15}\/status\/\d{2,32}(|\/likes|\/retweets|\/retweets\/with_comments|)$/,
+            /^\/i\/web\/status\/\d{2,32}(|\/likes|\/retweets|\/retweets\/with_comments|)$/,
         ],
     },
     {
         name: "profile",
         paths: [
             /^\/[A-z-0-9-_]{1,15}(\/with_replies|\/media|\/likes|\/following|\/followers|\/followers_you_follow|\/lists|)$/g,
+            /^\/i\/user\/\d{2,32}(|\/with_replies|\/media|\/likes|\/following|\/followers|\/followers_you_follow|\/lists|)$/g,
         ],
         exclude: [
             "/home",
@@ -80,16 +82,6 @@ if (realPath === "/") {
     location.replace("/home");
 }
 
-if (realPath.startsWith("/i/user/")) {
-    let id = realPath.split("/i/user/")[1];
-    if (id.endsWith("/")) id = id.slice(0, -1);
-    API.user.get(id, true).then((user) => {
-        if (user.error) {
-            return;
-        }
-        location.replace("/" + user.screen_name);
-    });
-}
 if (realPath === "/intent/user") {
     let id = location.search.split("user_id=")[1];
     API.user.get(id, true).then((user) => {
@@ -97,17 +89,6 @@ if (realPath === "/intent/user") {
             return;
         }
         location.replace("/" + user.screen_name);
-    });
-}
-if (realPath.startsWith("/i/web/status/")) {
-    let id = location.pathname.split("/i/web/status/")[1];
-    API.tweet.getV2(id).then((tweet) => {
-        if (tweet.error) {
-            return;
-        }
-        location.replace(
-            "/" + tweet.user.screen_name + "/status/" + tweet.id_str
-        );
     });
 }
 if (realPath.startsWith("/i/redirect")) {
@@ -147,6 +128,7 @@ if (
         realPath.startsWith("/i/premium_sign_up/") ||
         realPath.startsWith("/i/events/") ||
         realPath.startsWith("/i/spaces/") ||
+        realPath.startsWith("/i/chat") ||
         realPath.startsWith("/i/oauth2") ||
         realPath.startsWith("/account") ||
         realPath.startsWith("/settings") ||
@@ -199,7 +181,8 @@ const TRANSLATORS = {
         ["zdimension", "/zdimension_"],
         ["Pikatchoum", "/applitom45"],
         ["adriend", "/_adriend_"],
-        ["celestial04_", "/celestial04_"],
+        ["clst04_", "/clst04_"],
+        ["_maxokie", "/_maxokie"]
     ],
     pt_BR: [
         ["kigi", "/kigidere"],
@@ -229,6 +212,7 @@ const TRANSLATORS = {
     tr: [
         ["KayrabCebll", "https://steamcommunity.com/id/KayrabCebll"],
         ["YordemEren", "/YordemEren"],
+        ["dursunator", "/dursunator"],
     ],
     it: [
         ["krek", "/CactusInc420"],
@@ -721,27 +705,6 @@ let page =
     LOC = LOC_DATA;
     LOC_EN = LOC_EN_DATA;
     LOC_EN.extension_id = { message: chrome.runtime.id };
-
-    try {
-        let cryptoKey = await readCryptoKey();
-        console.log("Crypto key", cryptoKey);
-        if (cryptoKey) {
-            OLDTWITTER_CONFIG.deviceId = cryptoKey.deviceId;
-        } else {
-            OLDTWITTER_CONFIG.deviceId = localStorage.getItem("device_id");
-            if (!OLDTWITTER_CONFIG.deviceId) {
-                OLDTWITTER_CONFIG.deviceId = uuidV4();
-                localStorage.setItem("device_id", OLDTWITTER_CONFIG.deviceId);
-            }
-        }
-    } catch (e) {
-        console.error("Error reading crypto key", e);
-        OLDTWITTER_CONFIG.deviceId = localStorage.getItem("device_id");
-        if (!OLDTWITTER_CONFIG.deviceId) {
-            OLDTWITTER_CONFIG.deviceId = uuidV4();
-            localStorage.setItem("device_id", OLDTWITTER_CONFIG.deviceId);
-        }
-    }
 
     LOC_EN.twitter_site_verification = {
         message: OLDTWITTER_CONFIG.verificationKey,

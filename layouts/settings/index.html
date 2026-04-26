@@ -55,7 +55,7 @@
                     </span>
                     <br>
                     <div class="about-links">
-                        <span>© 2025 dimden</span> 
+                        <span>© 2026 dimden</span> 
                         <a href="https://dimden.dev/" target="_blank">__MSG_website__</a>
                         <a href="/dimden">Twitter</a>
                         <a href="https://dimden.dev/donate" target="_blank" id="donate-button">__MSG_donate__</a>
@@ -123,8 +123,8 @@
                             <option value="chrono">__MSG_chrono__</option>
                             <option value="chrono-no-retweets">__MSG_chrono_no_retweets__</option>
                             <option value="chrono-retweets">__MSG_chrono_retweets__</option>
-                            <option value="chrono-social">__MSG_chrono_social__</option>
                             <option value="algo">__MSG_algov2__</option>
+                            <option value="popular-from-follows">__MSG_popular_from_follows__</option>
                         </select>
                         <label for="tl-type">__MSG_timeline_type__</label> <span class="option-help" id="tl-help">?</span>
                     </div>
@@ -186,16 +186,7 @@
 					<div class="setting">
                         <input type="checkbox" id="hide-original-languages"> <label for="hide-original-languages">__MSG_hide_original_languages__</label>
                     </div>
-                    <div class="setting">
-                        <span>__MSG_copy_tweet_links_as__</span> 
-                        <select id="copy-links-as">
-                            <option value="twitter.com">twitter.com</option>
-                            <option value="fxtwitter.com">fxtwitter.com</option>
-                            <option value="vxtwitter.com">vxtwitter.com</option>
-                            <option value="nitter.net">nitter.net</option>
-                            <option value="custom">custom</option>
-                        </select>
-                    </div>
+
                     <h2>__MSG_autotranslation__</h2> <span class="option-help" id="autotl-help">?</span><br>
                     <div class="setting">
                         <span>__MSG_autotranslation_mode__:</span>
@@ -236,6 +227,9 @@
                     <div class="setting">
                         <input type="checkbox" id="update-timeline-automatically"> <label for="update-timeline-automatically">__MSG_update_timeline_automatically__</label>
                     </div>
+                    <div class="setting">
+                        <input type="checkbox" id="keep-timeline-position"> <label for="keep-timeline-position">__MSG_keep_timeline_position__</label>
+                    </div>
                     <div class="setting" id="enable-iframe-navigation-div">
                         <input type="checkbox" id="enable-iframe-navigation"> <label for="enable-iframe-navigation">__MSG_enable_iframe_navigation__</label>
                     </div>
@@ -264,6 +258,9 @@
                     <h2>__MSG_old_twitter_look__</h2><br>
                     <div class="setting">
                         <input type="checkbox" id="modern-ui-switch"> <label for="modern-ui-switch">__MSG_modern_ui__</label>
+                    </div>
+                    <div class="setting">
+                        <input type="checkbox" id="use-x-chat"> <label for="use-x-chat">__MSG_use_x_chat__</label>
                     </div>
                     <div class="setting">
                         <input type="checkbox" id="slow-link-colors-in-tl"> <label for="slow-link-colors-in-tl">__MSG_slow_show_colors_in_timeline__</label>
@@ -332,6 +329,9 @@
                         <input type="checkbox" id="twitter-blue-checkmarks"> <label for="twitter-blue-checkmarks">__MSG_twitter_blue_checkmarks__</label>
                     </div>
                     <div class="setting">
+                        <input type="checkbox" id="show-based-in"> <label for="show-based-in">__MSG_show_based_in__</label>
+                    </div>
+                    <div class="setting">
                         <input type="checkbox" id="hide-followers"> <label for="hide-followers">__MSG_hide_followers__</label>
                     </div>
                     <div class="setting">
@@ -346,6 +346,10 @@
                     <div class="setting">
                         <input type="checkbox" id="transition-profile-banner"> <label for="transition-profile-banner">__MSG_transition_profile_banner__</label>
                     </div>
+                    <div class="setting">
+                        <input type="checkbox" id="new-gallery"> <label for="new-gallery">__MSG_new_gallery__</label>
+                    </div>
+                    
                     <h2>__MSG_tweets_and_timeline__</h2><br>
                     <div class="setting">
                         <input type="checkbox" id="show-bookmark-count"> <label for="show-bookmark-count">__MSG_show_bookmark_count__</label>
@@ -367,6 +371,18 @@
                     </div>
                     <div class="setting" id="loc-dig" hidden>
                         <input type="checkbox" id="localize-digit"> <label for="localize-digit">__MSG_localize_digit__</label>
+                    </div>
+                    <div class="setting">
+                        <span>__MSG_copy_tweet_links_as__</span> 
+                        <select id="copy-links-as">
+                            <option value="twitter.com">twitter.com</option>
+                            <option value="fxtwitter.com">fxtwitter.com</option>
+                            <option value="vxtwitter.com">vxtwitter.com</option>
+                            <option value="fixupx.com">fixupx.com</option>
+                            <option value="nitter.net">nitter.net</option>
+                            <option value="x.com">x.com</option>
+                            <option value="custom">custom</option>
+                        </select>
                     </div>
                     
                     <h2>__MSG_font__</h2><br>
@@ -448,7 +464,7 @@
                     </span>
                     <br>
                     <div class="about-links">
-                        <span>© 2025 dimden</span> 
+                        <span>© 2026 dimden</span> 
                         <a href="https://dimden.dev/" target="_blank">__MSG_website__</a>
                         <a href="/dimden">Twitter</a>
                         <a href="https://dimden.dev/donate" target="_blank" id="donate-button">__MSG_donate__</a>

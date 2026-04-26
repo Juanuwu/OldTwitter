@@ -1,4 +1,4 @@
-# OldTwitter (2025)
+# OldTwitter (2026)
 Browser extension to return old Twitter layout from 2015 (and option to use 2018 design).  
 This extension doesn't add any CSS on top of original Twitter. It's fully original client that replaces Twitter, making it much faster than alternatives.
 
@@ -27,7 +27,6 @@ If you like this extension please consider donating:
 ## Features
 
 - Almost all of Twitter functionality is implemented
-- Both reverse chronological and algorithmical timelines support. And exclusive: Reverse chronological timeline with friends likes and follows (basically mix of both chrono and algo timelines)
 - Custom profile link colors supported
 - You can change custom profile link color and it'll appear for other extension users (priority: oldtwitter color db -> twitter color db -> default color)
 - Removes all analytics and tracking from Twitter
@@ -165,7 +164,7 @@ These will work when reply/quote/new tweet modal is focused.
 English - [dimden](https://dimden.dev/)  
 Russian - [dimden](https://dimden.dev/)  
 Ukrainian - [dimden](https://dimden.dev/)  
-French - [Aurore C.](https://asuure.com/), [zdimension](https://twitter.com/zdimension_), [Pikatchoum](https://twitter.com/applitom45), [adriend](https://twitter.com/_adriend_), [celestial04_](https://twitter.com/celestial04_)  
+French - [Aurore C.](https://asuure.com/), [zdimension](https://twitter.com/zdimension_), [Pikatchoum](https://twitter.com/applitom45), [adriend](https://twitter.com/_adriend_), [celestial04_](https://twitter.com/clst04_), [_maxokie](https://x.com/_maxokie)
 Portuguese (Brazil) - [kigidere](https://twitter.com/kigidere), [guko](https://twitter.com/gukodev), [prophamoon](https://twitter.com/prophamoony)  
 Spanish - [rogerpb98](https://twitter.com/anbulansia), [gaelcoral](https://twitter.com/gaelcoral), [hue](https://twitter.com/huey1116), Beelzenef, [elderreka](https://twitter.com/elderreka)  
 Greek - [VasilisTheChu](https://pikachu.systems/)  
@@ -181,7 +180,7 @@ Turkish - [KayrabCebll](https://steamcommunity.com/id/KayrabCebll), [YordemEren]
 Italian - [krek](https://twitter.com/CactusInc420), [Francesco](https://twitter.com/FrancescoRosi27)  
 Arabic - [Yours Truly,](https://twitter.com/schrotheneko)  
 Thai - [0.21%BloodAlcohol](https://github.com/Silberweich)  
-Polish - lele, [nomi](https://twitter.com/youmaynomi)  
+Polish - lele, [nomi](https://twitter.com/youmaynomi), [jakeayy](https://twitter.com/jakeayy_)  
 Vietnamese - [btmxh](https://github.com/btmxh)  
 Traditional Chinese - [Oliver Tzeng（曾嘉禾）](https://github.com/olivertzeng), [cirx1e](https://github.com/cirx1e)  
 Simplified Chinese - [am1006](https://github.com/am1006), [CarimoWuling](https://twitter.com/carimowuling)  

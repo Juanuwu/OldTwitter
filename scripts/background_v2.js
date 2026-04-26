@@ -54,6 +54,7 @@ chrome.webRequest.onBeforeRequest.addListener(
                 !details.originUrl.includes("tweetdeck.twitter.com") &&
                 !details.url.includes("ondemand.s.") && 
                 !details.url.includes("vendor.") && 
+                !details.url.includes("shared~~") &&
                 // includes
                 details.url.includes("abs.twimg.com/responsive-web/client-web"),
         };
@@ -82,6 +83,18 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
         urls: ["*://*.twimg.com/*", "*://twimg.com/*"],
     },
     ["blocking", "requestHeaders"]
+);
+chrome.webRequest.onHeadersReceived.addListener(
+    function (details) {
+        const responseHeaders = details.responseHeaders.filter(
+            (h) => h.name.toLowerCase() !== "x-frame-options" && h.name.toLowerCase() !== "content-security-policy"
+        );
+        return { responseHeaders };
+    },
+    {
+        urls: ["*://*.twitter.com/*", "*://twitter.com/*", "*://*.x.com/*", "*://x.com/*"],
+    },
+    ["blocking", "responseHeaders"]
 );
 chrome.webRequest.onBeforeSendHeaders.addListener(
     //this isnt particularly elegant solution
