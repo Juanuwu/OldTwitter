@@ -84,7 +84,8 @@
 
                     const assignMatch = challengeData.match(/(\w+\s*\.\s*default\s*=\s*)\(\s*\)\s*=>/);
                     const propMatch = challengeData.match(/default:\(\)=>(\w+)\}\)/);
-                    if (!assignMatch && !propMatch) {
+                    const arrayMatch = challengeData.match(/\.d\([\w$]+,\["default",(\d+),([\w$]+)[,\]]/);
+                    if (!assignMatch && !propMatch && !arrayMatch) {
                         console.error('Default export not found');
                         event.source.postMessage({ action: 'initError', error: 'Default export not found' }, event.origin);
                         initError = true;
@@ -103,11 +104,17 @@
                             assignMatch[0],
                             `${assignMatch[1]}window.__CHALLENGE_FN__=()=>`
                         );
-                    } else {
+                    } else if (propMatch) {
                         const defaultVar = propMatch[1];
                         patchedChallengeData = challengeData.replace(
                             `default:()=>${defaultVar}`,
                             `default:(window._CHALLENGE=()=>${defaultVar})`
+                        );
+                    } else {
+                        const [, flag, defaultVar] = arrayMatch;
+                        patchedChallengeData = challengeData.replace(
+                            `["default",${flag},${defaultVar}`,
+                            `["default",${flag},(window._CHALLENGE=()=>${defaultVar},${defaultVar})`
                         );
                     }
                     eval(patchedChallengeData);
@@ -138,6 +145,14 @@
                     }
 
                     wreq.d = (exports, definition) => {
+                        if (Array.isArray(definition)) {
+                            // newer webpack: flat [name, flag, value, ...] list
+                            for (let i = 0; i < definition.length; i += 3) {
+                                const [key, flag, value] = definition.slice(i, i + 3);
+                                Object.defineProperty(exports, key, { enumerable: true, get: flag && typeof value === "function" ? value : () => value });
+                            }
+                            return;
+                        }
                         for (const key in definition) {
                             Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
                         }
@@ -154,6 +169,12 @@
                         return getter;
                     };
                     wreq.o = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
+                    wreq.dn = (fn) => {
+                        try {
+                            if (typeof fn === "function" && !fn.name) Object.defineProperty(fn, "name", { value: "default", configurable: true });
+                        } catch {}
+                        return fn;
+                    };
                     webpackChunk_twitter_responsive_web[1][1][id](chunks, cache, wreq);
 
                     if (window.__CHALLENGE_FN__) {
