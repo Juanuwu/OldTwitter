@@ -1137,15 +1137,12 @@
 		"message": "Alguns tweets falharam em carregar."
 	},
 	"error_instructions": {
-		"message": "Por favor copie o texto abaixo e envie-o para a $AT1$página no Github$AT2$ ou para $AT3$meu email$AT2$. Muito obrigado!",
+		"message": "Por favor copie o texto abaixo e envie-o para a $AT1$página no Github$AT2$. Muito obrigado!",
 		"placeholders": {
 			"at1": {
 				"content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>"},
 			"at2": {
 				"content": "</a>"
-			},
-			"at3": {
-				"content": "<a target='_blank' href='mailto:admin@dimden.dev'>"
 			}
 		}
 	},

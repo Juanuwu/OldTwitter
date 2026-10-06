@@ -656,5 +656,13 @@
     "new_gallery": { "message": "Utilizza la nuova galleria per la pagina contenuti del profilo" },
 	"popular_from_follows": { "message": "Popolari dai seguiti" },
     "popular_from_follows_help": { "message": "Questo mostrerà i tweet recenti più popolari solo delle persone che segui." },
-    "use_x_chat": { "message": "Usa X Chat invece dei DM di OldTwitter." }
+    "use_x_chat": { "message": "Usa X Chat invece dei DM di OldTwitter." },
+    "gif": { "message": "GIF" },
+    "gif_btn": { "message": "[GIF]" },
+    "gif_no_results": { "message": "Nessuna GIF trovata. Prova con un'altra ricerca." },
+    "tweet_doesnt_exist": { "message": "Questo tweet non esiste." },
+    "block_grok_edit": { "message": "Impedisci a Grok di modificare le immagini che carichi" },
+    "show_download_button": { "message": "Mostra il pulsante di download sui tweet con contenuti multimediali" },
+    "pin_likes_on_navbar": { "message": "Mostra i Mi piace nella barra di navigazione" },
+    "open_oldtwitter": { "message": "Apri questa pagina in OldTwitter" }
 }

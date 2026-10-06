@@ -346,11 +346,10 @@
     "notifications_error": { "message": "Một số thông báo không thể được tải do gặp lỗi." },
     "tweet_error": { "message": "Một số tweet không thể được tải do gặp lỗi." },
     "error_instructions": {
-        "message": "Hãy sao chép phần text dưới đây và gửi nó đến $AT1$issue tracker$AT2$ or $AT3$email của tôi$AT2$. Cảm ơn!",
+        "message": "Hãy sao chép phần text dưới đây và gửi nó đến $AT1$issue tracker$AT2$. Cảm ơn!",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Đang khởi động" },

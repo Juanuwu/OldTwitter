@@ -347,11 +347,10 @@
     "notifications_error": { "message": "Bazı bildirimler hatalar yüzünden yüklenemedi." },
     "tweet_error": { "message": "Bazı tweetler hatalar yüzünden yüklenemedi." },
     "error_instructions": {
-        "message": "ütfen aşağıdaki yazıyı kopyala ve şuraya gönder: $AT1$issue tracker$AT2$ veya $AT3$my email$AT2$. Teşekkürler!",
+        "message": "ütfen aşağıdaki yazıyı kopyala ve şuraya gönder: $AT1$issue tracker$AT2$. Teşekkürler!",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Başlatılıyor" },

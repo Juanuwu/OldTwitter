@@ -338,11 +338,10 @@
     "notifications_error": { "message": "Деякі сповіщення не вдалося показати через помилки." },
     "tweet_error": { "message": "Деякі твіти не вдалося показати через помилки." },
     "error_instructions": {
-        "message": "Будь ласка скопіюйте текст знизу і відправте його в $AT1$трекер помилок$AT2$ або на $AT3$мою пошту$AT2$. Дякую.",
+        "message": "Будь ласка скопіюйте текст знизу і відправте його в $AT1$трекер помилок$AT2$. Дякую.",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Ініціалізація" },

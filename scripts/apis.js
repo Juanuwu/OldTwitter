@@ -3,6 +3,7 @@ let loadingReplies = {};
 let loadingLikers = {};
 let tweetStorage = {};
 let userStorage = {};
+let aboutStorage = {};
 let hashflagStorage = {};
 let translateLimit = 0;
 let loadingNotifs;
@@ -33,6 +34,14 @@ setInterval(() => {
             Date.now() - userStorage[i].cacheDate > 60000 * 15
         ) {
             delete userStorage[i];
+        }
+    }
+    for (let i in aboutStorage) {
+        if (
+            aboutStorage[i].cacheDate &&
+            Date.now() - aboutStorage[i].cacheDate > 60000 * 15
+        ) {
+            delete aboutStorage[i];
         }
     }
 }, 60000 * 10);
@@ -178,7 +187,8 @@ function parseTweet(res) {
     let tweet = res.legacy;
     if (!res.core) return;
     tweet.user = res.core.user_results.result.legacy;
-    tweet.user.id_str = tweet.user_id_str;
+    tweet.user.id_str =
+        tweet.user_id_str || res.core.user_results.result.rest_id;
     const ur = res.core.user_results.result;
     if(ur?.location?.location) tweet.user.location = ur.location.location;
     if(ur?.avatar?.image_url) tweet.user.profile_image_url_https = ur.avatar.image_url;
@@ -255,7 +265,8 @@ function parseTweet(res) {
                     }
                 }
                 result.legacy.quoted_status.user = qu;
-                result.legacy.quoted_status.user.id_str = qu.id_str;
+                result.legacy.quoted_status.user.id_str =
+                    qu.id_str || qur.rest_id;
                 tweetStorage[result.legacy.quoted_status.id_str] =
                     result.legacy.quoted_status;
                 tweetStorage[result.legacy.quoted_status.id_str].cacheDate =
@@ -300,7 +311,8 @@ function parseTweet(res) {
                     }
                 }
                 result.legacy.quoted_status.user = qu;
-                result.legacy.quoted_status.user.id_str = qu.id_str;
+                result.legacy.quoted_status.user.id_str =
+                    qu.id_str || qur.rest_id;
                 tweetStorage[result.legacy.quoted_status.id_str] =
                     result.legacy.quoted_status;
                 tweetStorage[result.legacy.quoted_status.id_str].cacheDate =
@@ -337,7 +349,7 @@ function parseTweet(res) {
                 }
             }
             tweet.retweeted_status.user = u;
-            tweet.retweeted_status.user.id_str = u.id_str;
+            tweet.retweeted_status.user.id_str = u.id_str || ur.rest_id;
             tweet.retweeted_status.ext = {};
             if (result.views) {
                 tweet.retweeted_status.ext.views = {
@@ -416,7 +428,7 @@ function parseTweet(res) {
                     }
                 }
                 tweet.quoted_status.user = u;
-                tweet.quoted_status.user.id_str = u.id_str;
+                tweet.quoted_status.user.id_str = u.id_str || ur.rest_id;
                 tweet.quoted_status.ext = {};
                 if (result.views) {
                     tweet.quoted_status.ext.views = {
@@ -4494,7 +4506,17 @@ const API = {
             });
         },
         getAbout: (name) => {
-            return new Promise((resolve, reject) => {
+            let key = String(name).toLowerCase();
+            if (aboutStorage[key]) {
+                if (aboutStorage[key].promise) return aboutStorage[key].promise;
+                if (
+                    aboutStorage[key].cacheDate &&
+                    Date.now() - aboutStorage[key].cacheDate < 60000 * 15
+                ) {
+                    return Promise.resolve(aboutStorage[key].data);
+                }
+            }
+            let promise = new Promise((resolve, reject) => {
                 fetch(
                     `/i/api/graphql/XRqGa7EeokUU5kppkh13EA/AboutAccountQuery?variables=${encodeURIComponent(JSON.stringify({ screenName: name }))}`,
                     {
@@ -4516,18 +4538,28 @@ const API = {
                     .then((data) => {
                         debugLog("user.getAbout", "start", { name, data });
                         if (data.errors && data.errors[0]) {
+                            delete aboutStorage[key];
                             return reject(data.errors[0].message);
                         }
 
                         let result = data.data.user_result_by_screen_name.result;
+                        let about = result.about_profile;
 
-                        debugLog("user.getAbout", "end", result.about_profile);
-                        resolve(result.about_profile);
+                        aboutStorage[key] = {
+                            data: about,
+                            cacheDate: Date.now(),
+                        };
+
+                        debugLog("user.getAbout", "end", about);
+                        resolve(about);
                     })
                     .catch((e) => {
+                        delete aboutStorage[key];
                         reject(e);
                     });
             });
+            aboutStorage[key] = { promise };
+            return promise;
         },
     },
     tweet: {
@@ -5062,15 +5094,33 @@ const API = {
 
                             sendRequestToEventListeners("TweetDetail", data);
 
+                            let addEntries =
+                                data.data.threaded_conversation_with_injections_v2.instructions.find(
+                                    (i) => i.type === "TimelineAddEntries"
+                                );
+                            let entry =
+                                addEntries &&
+                                addEntries.entries &&
+                                addEntries.entries.find(
+                                    (e) => e.entryId === `tweet-${id}`
+                                );
                             let ic =
-                                data.data.threaded_conversation_with_injections_v2.instructions
-                                    .find(
-                                        (i) => i.type === "TimelineAddEntries"
-                                    )
-                                    .entries.find(
-                                        (e) => e.entryId === `tweet-${id}`
-                                    ).content.itemContent;
-                            let res = ic.tweet_results.result;
+                                entry &&
+                                entry.content &&
+                                entry.content.itemContent;
+                            let res =
+                                ic &&
+                                ic.tweet_results &&
+                                ic.tweet_results.result;
+                            if (!res) {
+                                let msg = LOC.tweet_doesnt_exist.message;
+                                if (loadingDetails[id])
+                                    loadingDetails[id].listeners.forEach((l) =>
+                                        l[1](msg)
+                                    );
+                                delete loadingDetails[id];
+                                return reject(msg);
+                            }
                             let tweet = parseTweet(res);
                             if (tweet) {
                                 tweet.hasModeratedReplies =
@@ -5617,18 +5667,20 @@ const API = {
                                     (i) => i.entries
                                 );
                             if (!ae) {
+                                if (!cursor) {
+                                    let msg = LOC.tweet_doesnt_exist.message;
+                                    if (loadingReplies[id])
+                                        loadingReplies[id].listeners.forEach(
+                                            (l) => l[1](msg)
+                                        );
+                                    delete loadingReplies[id];
+                                    return reject(msg);
+                                }
                                 let out = {
                                     list: [],
                                     cursor: null,
                                     users: {},
                                 };
-                                if (!cursor) {
-                                    if (loadingReplies[id])
-                                        loadingReplies[id].listeners.forEach(
-                                            (l) => l[0](out)
-                                        );
-                                    delete loadingReplies[id];
-                                }
                                 debugLog("tweet.getRepliesV2", "end", {
                                     cursor,
                                     out,
@@ -5983,6 +6035,20 @@ const API = {
                                 users,
                             };
                             debugLog("tweet.getRepliesV2", "end", out);
+
+                            if (
+                                !cursor &&
+                                !list.some((t) => t.type === "mainTweet") &&
+                                !list.some((t) => t.type === "tombstone")
+                            ) {
+                                let msg = LOC.tweet_doesnt_exist.message;
+                                if (loadingReplies[id])
+                                    loadingReplies[id].listeners.forEach((l) =>
+                                        l[1](msg)
+                                    );
+                                delete loadingReplies[id];
+                                return reject(msg);
+                            }
 
                             resolve(out);
 
@@ -6855,7 +6921,7 @@ const API = {
                         location.hostname
                     }/1.1/search/typeahead.json?q=${encodeURIComponent(
                         query
-                    )}&include_can_dm=1&count=5&prefetch=false&cards_platform=Web-13&include_entities=1&include_user_entities=1&include_cards=1&send_error_codes=1&tweet_mode=extended&include_ext_alt_text=true&include_reply_count=true&ext=views%2CmediaStats%2CverifiedType%2CisBlueVerified`,
+                    )}&include_ext_is_blue_verified=1&include_ext_verified_type=1&include_ext_profile_image_shape=1&src=search_box&result_type=cashtags%2Cevents%2Cusers%2Ctopics%2Clists`,
                     {
                         headers: {
                             authorization: OLDTWITTER_CONFIG.public_token,
@@ -7384,14 +7450,19 @@ const API = {
         },
         gifs: (query, cursor) => {
             return new Promise((resolve, reject) => {
-                fetch(`https://x.com/i/api/1.1/foundmedia/search.json?q=${query}${cursor ? `&cursor=${cursor}` : ""}`, {
-                    headers: {
-                        authorization: OLDTWITTER_CONFIG.public_token,
-                        "x-csrf-token": OLDTWITTER_CONFIG.csrf,
-                        "x-twitter-auth-type": "OAuth2Session",
-                    },
-                    credentials: "include",
-                })
+                fetch(
+                    `https://x.com/i/api/1.1/foundmedia/search.json?q=${encodeURIComponent(
+                        query || ""
+                    )}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+                    {
+                        headers: {
+                            authorization: OLDTWITTER_CONFIG.public_token,
+                            "x-csrf-token": OLDTWITTER_CONFIG.csrf,
+                            "x-twitter-auth-type": "OAuth2Session",
+                        },
+                        credentials: "include",
+                    }
+                )
                     .then((i) => i.json())
                     .then((data) => {
                         resolve(data);
@@ -8356,7 +8427,7 @@ const API = {
                         if (data.errors && data.errors[0].code === 32) {
                             return reject("Not logged in");
                         }
-                        if (data.errors && data.errors[0]) {
+                        if (data.errors && data.errors[0] && !data?.data?.list) {
                             return reject(data.errors[0].message);
                         }
                         chrome.storage.local.set({ listData: {} }, () => {});
@@ -8398,7 +8469,7 @@ const API = {
                         if (data.errors && data.errors[0].code === 32) {
                             return reject("Not logged in");
                         }
-                        if (data.errors && data.errors[0]) {
+                        if (data.errors && data.errors[0] && !data?.data?.list) {
                             return reject(data.errors[0].message);
                         }
                         chrome.storage.local.set({ listData: {} }, () => {});
@@ -9167,7 +9238,8 @@ const API = {
             }
             if (
                 (typeof data.alt === "string" && data.alt.length > 0) ||
-                data.cw.length > 0
+                data.cw.length > 0 ||
+                vars.blockGrokEdit
             ) {
                 try {
                     let obj = {
@@ -9180,6 +9252,11 @@ const API = {
                     }
                     if (data.cw.length > 0) {
                         obj.sensitive_media_warning = data.cw;
+                    }
+                    if (vars.blockGrokEdit) {
+                        obj.grok_actions = {
+                            block_grok_edit: "true",
+                        };
                     }
                     await fetch(
                         `https://upload.${location.hostname}/1.1/media/metadata/create.json`,

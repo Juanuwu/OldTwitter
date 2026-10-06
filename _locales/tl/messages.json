@@ -343,11 +343,10 @@
     "notifications_error": { "message": "Hindi mai-load ang ilang mga abiso dahil nagkaproblema." },
     "tweet_error": { "message": "Hindi mai-load ang ilang mga tweets dahil nagkaproblema." },
     "error_instructions": {
-        "message": "Pakikopya ang text sa ilalim at i-send sa $AT1$ating issue tracker$AT2$ o $AT3$sa email ko$AT2$. Salamat!",
+        "message": "Pakikopya ang text sa ilalim at i-send sa $AT1$ating issue tracker$AT2$. Salamat!",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Sinisimulan" },

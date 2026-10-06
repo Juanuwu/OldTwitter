@@ -284,6 +284,7 @@ setTimeout(async () => {
     let roundAvatars = document.getElementById('round-avatars-switch');
     let modernUI = document.getElementById('modern-ui-switch');
     let showOriginalImages = document.getElementById('show-original-images');
+    let blockGrokEdit = document.getElementById('block-grok-edit');
     let noBigFont = document.getElementById('no-big-font');
     let language = document.getElementById('language');
     let autoplayVideos = document.getElementById('autoplay-videos');
@@ -302,6 +303,7 @@ setTimeout(async () => {
     let hideFollowers = document.getElementById('hide-followers');
     let disablePersonalizedTrends = document.getElementById('disable-personalized-trends');
     let showBookmarkCount = document.getElementById('show-bookmark-count');
+    let showDownloadButton = document.getElementById('show-download-button');
     let showQuoteCount = document.getElementById('show-quote-count');
     let hideCommunityNotes = document.getElementById('hide-community-notes');
     let disableGifAutoplay = document.getElementById('disable-gif-autoplay');
@@ -309,6 +311,7 @@ setTimeout(async () => {
     let pinProfileOnNavbar = document.getElementById('pin-profile-on-navbar');
     let pinBookmarksOnNavbar = document.getElementById('pin-bookmarks-on-navbar');
     let pinListsOnNavbar = document.getElementById('pin-lists-on-navbar');
+    let pinLikesOnNavbar = document.getElementById('pin-likes-on-navbar');
     let useOldDefaultProfileImage = document.getElementById('use-old-default-profile-navbar');
     let uncensorGraphicViolenceAutomatically = document.getElementById('uncensor-graphic-violence-automatically');
     let uncensorAdultContentAutomatically = document.getElementById('uncensor-adult-content-automatically');
@@ -467,6 +470,13 @@ setTimeout(async () => {
             pinListsOnNavbar: pinListsOnNavbar.checked
         }, () => {
             document.getElementById('pin-lists').hidden = !pinListsOnNavbar.checked;
+        });
+    });
+    pinLikesOnNavbar.addEventListener('change', () => {
+        chrome.storage.sync.set({
+            pinLikesOnNavbar: pinLikesOnNavbar.checked
+        }, () => {
+            document.getElementById('pin-likes').hidden = !pinLikesOnNavbar.checked;
         });
     });
     openNotifsAsModal.addEventListener('change', () => {
@@ -681,6 +691,13 @@ setTimeout(async () => {
             showOriginalImages: showOriginalImages.checked
         }, () => { });
     });
+    blockGrokEdit.addEventListener('change', () => {
+        chrome.storage.sync.set({
+            blockGrokEdit: blockGrokEdit.checked
+        }, () => {
+            vars.blockGrokEdit = blockGrokEdit.checked;
+        });
+    });
     updateTimelineAutomatically.addEventListener('change', () => {
         chrome.storage.sync.set({
             updateTimelineAutomatically: updateTimelineAutomatically.checked
@@ -737,6 +754,11 @@ setTimeout(async () => {
     showBookmarkCount.addEventListener('change', () => {
         chrome.storage.sync.set({
             showBookmarkCount: showBookmarkCount.checked
+        }, () => { });
+    });
+    showDownloadButton.addEventListener('change', () => {
+        chrome.storage.sync.set({
+            showDownloadButton: showDownloadButton.checked
         }, () => { });
     });
     showQuoteCount.addEventListener('change', () => {
@@ -1085,12 +1107,14 @@ setTimeout(async () => {
     hideFollowers.checked = !!vars.hideFollowers;
     disablePersonalizedTrends.checked = !!vars.disablePersonalizedTrends;
     showBookmarkCount.checked = !!vars.showBookmarkCount;
+    showDownloadButton.checked = !!vars.showDownloadButton;
     hideCommunityNotes.checked = !!vars.hideCommunityNotes;
     disableGifAutoplay.checked = !!vars.disableGifAutoplay;
     showMediaCount.checked = !!vars.showMediaCount;
     pinProfileOnNavbar.checked = !!vars.pinProfileOnNavbar;
     pinBookmarksOnNavbar.checked = !!vars.pinBookmarksOnNavbar;
     pinListsOnNavbar.checked = !!vars.pinListsOnNavbar;
+    pinLikesOnNavbar.checked = !!vars.pinLikesOnNavbar;
     useOldDefaultProfileImage.checked = !!vars.useOldDefaultProfileImage;
     hideOriginalLanguages.checked = !!vars.hideOriginalLanguages;
     uncensorAdultContentAutomatically.checked = !!vars.uncensorAdultContentAutomatically;
@@ -1122,6 +1146,7 @@ setTimeout(async () => {
     document.getElementById('stt-div').hidden = vars.timelineType !== 'algo' && vars.timelineType !== 'algov2';
     savePreferredQuality.checked = !!vars.savePreferredQuality;
     showOriginalImages.checked = !!vars.showOriginalImages;
+    blockGrokEdit.checked = !!vars.blockGrokEdit;
     roundAvatars.checked = !!vars.roundAvatars;
     modernUI.checked = !!vars.modernUI;
     language.value = vars.language ? vars.language : 'en';

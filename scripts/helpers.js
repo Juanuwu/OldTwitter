@@ -173,51 +173,56 @@ async function handleFiles(files, mediaArray, mediaContainer, is_dm = false) {
     }
     // get base64 data
     let media = [...images, ...videos, ...gifs];
-    let base64Data = [];
+    let base64Data = await Promise.all(
+        media.map(
+            (file) =>
+                new Promise((resolve, reject) => {
+                    let reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => reject(reader.error);
+                    reader.readAsArrayBuffer(file);
+                })
+        )
+    );
+    while (mediaArray.length >= 4) {
+        mediaArray.pop();
+        mediaContainer.lastChild.remove();
+    }
     for (let i = 0; i < media.length; i++) {
         let file = media[i];
-        let reader = new FileReader();
-        reader.readAsArrayBuffer(file);
-        reader.onload = () => {
-            base64Data.push(reader.result);
-            if (base64Data.length === media.length) {
-                while (mediaArray.length >= 4) {
-                    mediaArray.pop();
-                    mediaContainer.lastChild.remove();
-                }
-                base64Data.forEach((data) => {
-                    let div = document.createElement("div");
-                    let img = document.createElement("img");
-                    div.title = file.name;
-                    div.id =
-                        `new-tweet-media-img-${Date.now()}${Math.random()}`.replace(
-                            ".",
-                            "-"
-                        );
-                    div.className = "new-tweet-media-img-div";
-                    img.className = "new-tweet-media-img";
-                    let progress = document.createElement("span");
-                    progress.hidden = true;
-                    progress.className = "new-tweet-media-img-progress";
-                    let remove = document.createElement("span");
-                    remove.className = "new-tweet-media-img-remove";
-                    let alt;
-                    if (!file.type.includes("video")) {
-                        alt = document.createElement("span");
-                        alt.className = "new-tweet-media-img-alt";
-                        alt.innerText = "ALT";
-                        alt.addEventListener("click", () => {
-                            mediaObject.alt = prompt(
-                                LOC.alt_text.message,
-                                mediaObject.alt || ""
-                            );
-                        });
-                    }
-                    let cw = document.createElement("span");
-                    cw.className = "new-tweet-media-img-cw";
-                    cw.innerText = "CW";
-                    cw.addEventListener("click", () => {
-                        createModal(`
+        let data = base64Data[i];
+        let div = document.createElement("div");
+        let img = document.createElement("img");
+        div.title = file.name;
+        div.id =
+            `new-tweet-media-img-${Date.now()}${Math.random()}`.replace(
+                ".",
+                "-"
+            );
+        div.className = "new-tweet-media-img-div";
+        img.className = "new-tweet-media-img";
+        let progress = document.createElement("span");
+        progress.hidden = true;
+        progress.className = "new-tweet-media-img-progress";
+        let remove = document.createElement("span");
+        remove.className = "new-tweet-media-img-remove";
+        let alt;
+        if (!file.type.includes("video")) {
+            alt = document.createElement("span");
+            alt.className = "new-tweet-media-img-alt";
+            alt.innerText = "ALT";
+            alt.addEventListener("click", () => {
+                mediaObject.alt = prompt(
+                    LOC.alt_text.message,
+                    mediaObject.alt || ""
+                );
+            });
+        }
+        let cw = document.createElement("span");
+        cw.className = "new-tweet-media-img-cw";
+        cw.innerText = "CW";
+        cw.addEventListener("click", () => {
+            createModal(`
                             <div class="cw-modal" style="color:var(--almost-black)">
                                 <h2 class="nice-header">${
                                     LOC.content_warnings.message
@@ -228,116 +233,111 @@ async function handleFiles(files, mediaArray, mediaContainer, is_dm = false) {
                                         ? " checked"
                                         : ""
                                 }> <label for="cw-modal-graphic_violence">${
-                            LOC.graphic_violence.message
-                        }</label><br>
+                LOC.graphic_violence.message
+            }</label><br>
                                 <input type="checkbox" id="cw-modal-adult_content"${
                                     mediaObject.cw.includes("adult_content")
                                         ? " checked"
                                         : ""
                                 }> <label for="cw-modal-adult_content">${
-                            LOC.adult_content.message
-                        }</label><br>
+                LOC.adult_content.message
+            }</label><br>
                                 <input type="checkbox" id="cw-modal-other"${
                                     mediaObject.cw.includes("other")
                                         ? " checked"
                                         : ""
                                 }> <label for="cw-modal-other">${
-                            LOC.sensitive_content.message
-                        }</label><br>
+                LOC.sensitive_content.message
+            }</label><br>
                             </div>
                         `);
-                        let graphic_violence = document.getElementById(
-                            "cw-modal-graphic_violence"
-                        );
-                        let adult_content = document.getElementById(
-                            "cw-modal-adult_content"
-                        );
-                        let sensitive_content =
-                            document.getElementById("cw-modal-other");
-                        [
-                            graphic_violence,
-                            adult_content,
-                            sensitive_content,
-                        ].forEach((checkbox) => {
-                            checkbox.addEventListener("change", () => {
-                                if (checkbox.checked) {
-                                    mediaObject.cw.push(checkbox.id.slice(9));
-                                } else {
-                                    let index = mediaObject.cw.indexOf(
-                                        checkbox.id.slice(9)
-                                    );
-                                    if (index > -1) {
-                                        mediaObject.cw.splice(index, 1);
-                                    }
-                                }
-                            });
-                        });
-                    });
-
-                    let mediaObject = {
-                        div,
-                        img,
-                        id: div.id,
-                        data: data,
-                        type: file.type,
-                        cw: [],
-                        category: file.type.includes("gif")
-                            ? is_dm
-                                ? "dm_gif"
-                                : "tweet_gif"
-                            : file.type.includes("video")
-                            ? is_dm
-                                ? "dm_video"
-                                : "tweet_video"
-                            : is_dm
-                            ? "dm_image"
-                            : "tweet_image",
-                    };
-                    mediaArray.push(mediaObject);
-                    if (file.type.includes("video")) {
-                        img.src =
-                            "data:image/png;base64,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";
+            let graphic_violence = document.getElementById(
+                "cw-modal-graphic_violence"
+            );
+            let adult_content = document.getElementById(
+                "cw-modal-adult_content"
+            );
+            let sensitive_content =
+                document.getElementById("cw-modal-other");
+            [
+                graphic_violence,
+                adult_content,
+                sensitive_content,
+            ].forEach((checkbox) => {
+                checkbox.addEventListener("change", () => {
+                    if (checkbox.checked) {
+                        mediaObject.cw.push(checkbox.id.slice(9));
                     } else {
-                        let dataBase64 = arrayBufferToBase64(data);
-                        img.src = `data:${file.type};base64,${dataBase64}`;
-                    }
-                    remove.addEventListener("click", () => {
-                        div.remove();
-                        for (let i = mediaArray.length - 1; i >= 0; i--) {
-                            let m = mediaArray[i];
-                            if (m.id === div.id) mediaArray.splice(i, 1);
+                        let index = mediaObject.cw.indexOf(
+                            checkbox.id.slice(9)
+                        );
+                        if (index > -1) {
+                            mediaObject.cw.splice(index, 1);
                         }
-                    });
-                    div.append(img, progress, remove);
-                    if (!file.type.includes("video")) {
-                        img.addEventListener("click", () => {
-                            new Viewer(mediaContainer, {
-                                transition: false,
-                                zoomRatio: 0.3,
-                            });
-                        });
-                        div.append(alt);
-                    } else {
-                        cw.style.marginLeft = "-53px";
                     }
-                    div.append(cw);
-                    mediaContainer.append(div);
                 });
+            });
+        });
 
-                setTimeout(() => {
-                    let messageModalElement =
-                        document.getElementsByClassName(
-                            "messages-container"
-                        )[0];
-                    let inboxModalElement =
-                        document.getElementsByClassName("inbox-modal")[0];
-                    if (messageModalElement)
-                        inboxModalElement.scrollTop =
-                            inboxModalElement.scrollHeight;
-                }, 10);
-            }
+        let mediaObject = {
+            div,
+            img,
+            id: div.id,
+            data: data,
+            type: file.type,
+            cw: [],
+            category: file.type.includes("gif")
+                ? is_dm
+                    ? "dm_gif"
+                    : "tweet_gif"
+                : file.type.includes("video")
+                ? is_dm
+                    ? "dm_video"
+                    : "tweet_video"
+                : is_dm
+                ? "dm_image"
+                : "tweet_image",
         };
+        mediaArray.push(mediaObject);
+        if (file.type.includes("video")) {
+            img.src =
+                "data:image/png;base64,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";
+        } else {
+            let dataBase64 = arrayBufferToBase64(data);
+            img.src = `data:${file.type};base64,${dataBase64}`;
+        }
+        remove.addEventListener("click", () => {
+            div.remove();
+            for (let j = mediaArray.length - 1; j >= 0; j--) {
+                let m = mediaArray[j];
+                if (m.id === div.id) mediaArray.splice(j, 1);
+            }
+        });
+        div.append(img, progress, remove);
+        if (!file.type.includes("video")) {
+            img.addEventListener("click", () => {
+                new Viewer(mediaContainer, {
+                    transition: false,
+                    zoomRatio: 0.3,
+                    url: getOriginalImageUrl,
+                });
+            });
+            div.append(alt);
+        } else {
+            cw.style.marginLeft = "-53px";
+        }
+        div.append(cw);
+        mediaContainer.append(div);
     }
+
+    setTimeout(() => {
+        let messageModalElement =
+            document.getElementsByClassName("messages-container")[0];
+        let inboxModalElement =
+            document.getElementsByClassName("inbox-modal")[0];
+        if (messageModalElement)
+            inboxModalElement.scrollTop = inboxModalElement.scrollHeight;
+    }, 10);
 }
 let isURL = (str) => {
     try {
@@ -497,6 +497,50 @@ function escapeHTML(unsafe) {
         .replaceAll("'", "&apos;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;"));
+}
+
+// pick a video/mp4 URL using saved preferred quality, highest quality, or data-saver lowest.
+function getPreferredVideoUrl(variants) {
+    let sorted = variants.slice().sort((a, b) => {
+        if (!b.bitrate) return -1;
+        return b.bitrate - a.bitrate;
+    });
+    let withBitrate = sorted.filter((v) => v.bitrate);
+    if (!withBitrate.length) {
+        let fallback = sorted.find((v) => v.content_type === "video/mp4");
+        return (fallback || sorted[0]).url;
+    }
+    if (typeof vars.savePreferredQuality !== "boolean") {
+        chrome.storage.sync.set({ savePreferredQuality: true }, () => {});
+        vars.savePreferredQuality = true;
+    }
+    if (localStorage.preferredQuality && vars.savePreferredQuality) {
+        return withBitrate.reduce((prev, curr) => {
+            return Math.abs(
+                parseInt(curr.url.match(/\/(\d+)x/)[1]) -
+                    parseInt(localStorage.preferredQuality)
+            ) <
+                Math.abs(
+                    parseInt(prev.url.match(/\/(\d+)x/)[1]) -
+                        parseInt(localStorage.preferredQuality)
+                )
+                ? curr
+                : prev;
+        }).url;
+    }
+    if (
+        window.navigator &&
+        navigator.connection &&
+        navigator.connection.type === "cellular" &&
+        !vars.disableDataSaver
+    ) {
+        return withBitrate.reduce((prev, curr) => {
+            return parseInt(curr.bitrate) < parseInt(prev.bitrate)
+                ? curr
+                : prev;
+        }).url;
+    }
+    return withBitrate[0].url;
 }
 
 function html(strings, ...values) {
@@ -989,6 +1033,7 @@ function generateCard(tweet, tweetElement, user) {
                         new Viewer(img, {
                             transition: false,
                             zoomRatio: 0.3,
+                            url: getOriginalImageUrl,
                         });
                     });
                     tweetElement
@@ -1244,6 +1289,181 @@ function createEmojiPicker(container, input, style = {}) {
     }, 100);
 
     return picker;
+}
+function createGifPicker(mediaArray, mediaContainer, is_dm = false) {
+    let cursor = undefined;
+    let loading = false;
+    let currentQuery = "";
+    let modal = createModal(
+        `
+        <div class="gif-picker" style="color:var(--almost-black)">
+            <h3 class="nice-header">${LOC.gif.message}</h3>
+            <input type="text" class="gif-picker-search" placeholder="${LOC.search.message}" style="width:100%;box-sizing:border-box;margin:8px 0 12px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font:14px var(--font-override);background:var(--background-color);color:var(--almost-black)">
+            <div class="gif-picker-grid"></div>
+            <div class="gif-picker-status center-text" style="padding:10px;color:var(--light-gray)">${LOC.loading.message}</div>
+        </div>
+    `,
+        "gif-picker-modal"
+    );
+    let searchInput = modal.querySelector(".gif-picker-search");
+    let grid = modal.querySelector(".gif-picker-grid");
+    let status = modal.querySelector(".gif-picker-status");
+    let content = modal.querySelector(".modal-content");
+
+    async function selectGif(item) {
+        let url =
+            item.original_image && item.original_image.url
+                ? item.original_image.url
+                : item.preview_image && item.preview_image.url
+                ? item.preview_image.url
+                : null;
+        if (!url || loading) return;
+        loading = true;
+        status.hidden = false;
+        status.innerText = LOC.loading.message;
+        try {
+            let blob;
+            try {
+                let res = await fetch(url);
+                if (!res.ok) throw new Error(res.status + " " + res.statusText);
+                blob = await res.blob();
+            } catch (e) {
+                blob = await new Promise((resolve, reject) => {
+                    chrome.runtime.sendMessage(
+                        { action: "fetchBlob", url },
+                        (response) => {
+                            if (chrome.runtime.lastError) {
+                                return reject(chrome.runtime.lastError);
+                            }
+                            if (!response || !response.ok) {
+                                return reject(
+                                    (response && response.error) || e
+                                );
+                            }
+                            let binary = atob(response.data);
+                            let bytes = new Uint8Array(binary.length);
+                            for (let i = 0; i < binary.length; i++) {
+                                bytes[i] = binary.charCodeAt(i);
+                            }
+                            resolve(
+                                new Blob([bytes], {
+                                    type: response.type || "image/gif",
+                                })
+                            );
+                        }
+                    );
+                });
+            }
+            let file = new File(
+                [blob],
+                (item.alt_text || "gif").replace(/[^\w\-]+/g, "_").slice(0, 40) +
+                    ".gif",
+                {
+                    type:
+                        blob.type && blob.type.includes("gif")
+                            ? blob.type
+                            : "image/gif",
+                }
+            );
+            while (mediaArray.length) {
+                mediaArray.pop();
+            }
+            mediaContainer.innerHTML = "";
+            await handleFiles([file], mediaArray, mediaContainer, is_dm);
+            modal.removeModal();
+        } catch (e) {
+            console.error(e);
+            status.innerText = String(e);
+            loading = false;
+        }
+    }
+
+    function appendItems(items) {
+        if (!items || !items.length) return;
+        for (let i = 0; i < items.length; i++) {
+            let item = items[i];
+            if (!item || (item.item_type && item.item_type !== "gif")) continue;
+            let thumb =
+                (item.thumbnail_images &&
+                    item.thumbnail_images[0] &&
+                    item.thumbnail_images[0].url) ||
+                (item.preview_image && item.preview_image.url) ||
+                (item.original_image && item.original_image.url);
+            if (!thumb) continue;
+            let btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "gif-picker-item";
+            btn.title = item.alt_text || "";
+            let img = document.createElement("img");
+            img.src = thumb;
+            img.alt = item.alt_text || "GIF";
+            img.loading = "lazy";
+            btn.appendChild(img);
+            btn.addEventListener("click", () => selectGif(item));
+            grid.appendChild(btn);
+        }
+    }
+
+    async function loadGifs(query, reset) {
+        if (loading) return;
+        loading = true;
+        if (reset) {
+            cursor = undefined;
+            grid.innerHTML = "";
+        }
+        status.hidden = false;
+        status.innerText = LOC.loading.message;
+        try {
+            let data = await API.search.gifs(query, cursor);
+            let items =
+                data && data.data && data.data.items
+                    ? data.data.items
+                    : data && data.items
+                    ? data.items
+                    : [];
+            if (reset && (!items || !items.length)) {
+                status.innerText = LOC.gif_no_results.message;
+            } else {
+                status.hidden = true;
+            }
+            appendItems(items);
+            cursor =
+                (data && data.data && (data.data.cursor || data.data.next_cursor)) ||
+                (data && (data.cursor || data.next_cursor)) ||
+                undefined;
+            if (!cursor) {
+                status.hidden = false;
+                if (grid.children.length === 0) {
+                    status.innerText = LOC.gif_no_results.message;
+                } else {
+                    status.hidden = true;
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            status.innerText = String(e);
+        }
+        loading = false;
+    }
+
+    let searchTimeout;
+    searchInput.addEventListener("input", () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            currentQuery = searchInput.value.trim();
+            loadGifs(currentQuery, true);
+        }, 300);
+    });
+    content.addEventListener("scroll", () => {
+        if (!cursor || loading) return;
+        if (content.scrollTop + content.clientHeight >= content.scrollHeight - 80) {
+            loadGifs(currentQuery, false);
+        }
+    });
+
+    setTimeout(() => searchInput.focus(), 50);
+    loadGifs("", true);
+    return modal;
 }
 function isEmojiOnly(str) {
     const stringToTest = str.replace(/ /g, "");
@@ -2235,6 +2455,18 @@ const mediaClasses = [
     "tweet-media-element-two",
 ];
 
+function getOriginalImageUrl(image) {
+    let src = image.src;
+    if (!src || src.startsWith("data:")) return src;
+    if (src.endsWith(":orig")) return src;
+    if (/[?&]name=/.test(src)) {
+        return src.replace(/([?&])name=[^&]*/, "$1name=orig");
+    }
+    if (/:(?:small|medium|large|thumb)$/.test(src)) {
+        return src.replace(/:(?:small|medium|large|thumb)$/, "");
+    }
+    return src + "?name=orig";
+}
 function calculateSize(x, y, max_x, max_y) {
     let ratio = x / y;
     let iw = innerWidth;
@@ -2696,7 +2928,7 @@ async function appendTweet(t, timelineContainer, options = {}) {
             blockUserText = `${LOC.block_user.message} @${t.user.screen_name}`;
             unblockUserText = `${LOC.unblock_user.message} @${t.user.screen_name}`;
         }
-        if (t.in_reply_to_screen_name && t.display_text_range) {
+        if (t.in_reply_to_screen_name && t.display_text_range && t.entities.user_mentions) {
             t.entities.user_mentions.forEach((user_mention) => {
                 if (user_mention.indices[0] < t.display_text_range[0]) {
                     mentionedUserArray.push(
@@ -2710,7 +2942,8 @@ async function appendTweet(t, timelineContainer, options = {}) {
         if (
             t.quoted_status &&
             t.quoted_status.in_reply_to_screen_name &&
-            t.display_text_range
+            t.display_text_range &&
+            t.quoted_status.entities.user_mentions
         ) {
             t.quoted_status.entities.user_mentions.forEach((user_mention) => {
                 if (user_mention.indices[0] < t.display_text_range[0]) {
@@ -3244,6 +3477,9 @@ async function appendTweet(t, timelineContainer, options = {}) {
             tweet.getElementsByClassName("tweet-reply-cancel")[0];
         const tweetReplyUpload =
             tweet.getElementsByClassName("tweet-reply-upload")[0];
+        const tweetReplyAddGif = tweet.getElementsByClassName(
+            "tweet-reply-add-gif"
+        )[0];
         const tweetReplyAddEmoji = tweet.getElementsByClassName(
             "tweet-reply-add-emoji"
         )[0];
@@ -3272,6 +3508,9 @@ async function appendTweet(t, timelineContainer, options = {}) {
         const tweetInteractBookmark = tweet.getElementsByClassName(
             "tweet-interact-bookmark"
         )[0];
+        const tweetInteractDownload = tweet.getElementsByClassName(
+            "tweet-interact-download"
+        )[0];
         const tweetInteractMore = tweet.getElementsByClassName(
             "tweet-interact-more"
         )[0];
@@ -3292,6 +3531,9 @@ async function appendTweet(t, timelineContainer, options = {}) {
             tweet.getElementsByClassName("tweet-quote-cancel")[0];
         const tweetQuoteUpload =
             tweet.getElementsByClassName("tweet-quote-upload")[0];
+        const tweetQuoteAddGif = tweet.getElementsByClassName(
+            "tweet-quote-add-gif"
+        )[0];
         const tweetQuoteAddEmoji = tweet.getElementsByClassName(
             "tweet-quote-add-emoji"
         )[0];
@@ -3504,7 +3746,6 @@ async function appendTweet(t, timelineContainer, options = {}) {
                                         "nice-button"
                                     )[0].innerText = LOC.remove.message;
                                 }
-                                l.is_member = !l.is_member;
                             });
                     }
                 }
@@ -3599,9 +3840,10 @@ async function appendTweet(t, timelineContainer, options = {}) {
             });
         if (tweetBodyQuote) {
             if (typeof mainTweetLikers !== "undefined") {
-                tweetBodyQuote.addEventListener("click", (e) => {
+                tweetBodyQuote.addEventListener("click", async (e) => {
                     e.preventDefault();
                     document.getElementById("loading-box").hidden = false;
+                    savePageData();
                     history.pushState(
                         {},
                         null,
@@ -3613,8 +3855,9 @@ async function appendTweet(t, timelineContainer, options = {}) {
                     cursor = undefined;
                     seenReplies = [];
                     mainTweetLikers = [];
+                    let restored = await restorePageData();
                     let id = location.pathname.match(/status\/(\d{1,32})/)[1];
-                    if (subpage === "tweet") {
+                    if (subpage === "tweet" && !restored) {
                         updateReplies(id);
                     } else if (subpage === "likes") {
                         updateLikes(id);
@@ -3634,21 +3877,10 @@ async function appendTweet(t, timelineContainer, options = {}) {
                         e.target.className &&
                         e.target.className.includes("tweet-media-element")
                     ) {
-                        if (
-                            !e.target.src.includes("?name=") &&
-                            !e.target.src.endsWith(":orig") &&
-                            !e.target.src.startsWith("data:")
-                        ) {
-                            e.target.src += "?name=orig";
-                        } else if (e.target.src.includes("?name=small")) {
-                            e.target.src = e.target.src.replace(
-                                "?name=small",
-                                "?name=large"
-                            );
-                        }
                         new Viewer(e.target.parentElement, {
                             transition: false,
                             zoomRatio: 0.3,
+                            url: getOriginalImageUrl,
                         });
                         e.target.click();
                         return;
@@ -3934,21 +4166,10 @@ async function appendTweet(t, timelineContainer, options = {}) {
                     );
                 }
                 if (e.target.tagName === "IMG") {
-                    if (
-                        !e.target.src.includes("?name=") &&
-                        !e.target.src.endsWith(":orig") &&
-                        !e.target.src.startsWith("data:")
-                    ) {
-                        e.target.src += "?name=orig";
-                    } else if (e.target.src.includes("?name=small")) {
-                        e.target.src = e.target.src.replace(
-                            "?name=small",
-                            "?name=large"
-                        );
-                    }
                     new Viewer(tweetMedia, {
                         transition: false,
                         zoomRatio: 0.3,
+                        url: getOriginalImageUrl,
                     });
                     e.target.click();
                 }
@@ -4020,6 +4241,10 @@ async function appendTweet(t, timelineContainer, options = {}) {
         });
         tweetReplyUpload.addEventListener("click", () => {
             getMedia(replyMedia, tweetReplyMedia);
+            tweetReplyText.focus();
+        });
+        tweetReplyAddGif.addEventListener("click", () => {
+            createGifPicker(replyMedia, tweetReplyMedia);
             tweetReplyText.focus();
         });
         tweetInteractReply.addEventListener("click", () => {
@@ -4467,6 +4692,9 @@ async function appendTweet(t, timelineContainer, options = {}) {
         });
         tweetQuoteUpload.addEventListener("click", () => {
             getMedia(quoteMedia, tweetQuoteMedia);
+        });
+        tweetQuoteAddGif.addEventListener("click", () => {
+            createGifPicker(quoteMedia, tweetQuoteMedia);
         });
         tweetQuoteText.addEventListener("keydown", (e) => {
             if (e.key === "Enter" && e.ctrlKey) {
@@ -5129,70 +5357,83 @@ async function appendTweet(t, timelineContainer, options = {}) {
             );
         });
         let downloading = false;
-        if (t.extended_entities && t.extended_entities.media.length > 0) {
-            tweetInteractMoreMenuDownload.addEventListener("click", () => {
-                if (downloading) return;
-                downloading = true;
-                t.extended_entities.media.forEach((item, index) => {
-                    let url =
-                        item.type === "photo"
-                            ? item.media_url_https
-                            : item.video_info.variants[0].url;
-                    url = new URL(url);
-                    if (item.type === "photo") {
-                        url.searchParams.set("name", "orig"); // force original resolution
-                    }
-                    _fetch(url)
-                        .then((res) => res.blob())
-                        .then((blob) => {
-                            downloading = false;
-                            let a = document.createElement("a");
-                            a.href = URL.createObjectURL(blob);
+        const downloadMedia = () => {
+            if (downloading) return;
+            if (
+                !t.extended_entities ||
+                !t.extended_entities.media ||
+                t.extended_entities.media.length === 0
+            )
+                return;
+            downloading = true;
+            t.extended_entities.media.forEach((item, index) => {
+                let url =
+                    item.type === "photo"
+                        ? item.media_url_https
+                        : item.video_info.variants[0].url;
+                url = new URL(url);
+                if (item.type === "photo") {
+                    url.searchParams.set("name", "orig"); // force original resolution
+                }
+                _fetch(url)
+                    .then((res) => res.blob())
+                    .then((blob) => {
+                        downloading = false;
+                        let a = document.createElement("a");
+                        a.href = URL.createObjectURL(blob);
 
-                            let ts = new Date(t.created_at)
-                                .toISOString()
-                                .split("T")[0];
-                            let extension = url.pathname.split(".").pop();
-                            let _index =
-                                t.extended_entities.media.length > 1
-                                    ? "_" + (index + 1)
-                                    : "";
-                            let filename = `${t.user.screen_name}_${ts}_${t.id_str}${_index}.${extension}`;
-                            let filename_template = vars.customDownloadTemplate;
+                        let ts = new Date(t.created_at)
+                            .toISOString()
+                            .split("T")[0];
+                        let extension = url.pathname.split(".").pop();
+                        let _index =
+                            t.extended_entities.media.length > 1
+                                ? "_" + (index + 1)
+                                : "";
+                        let filename = `${t.user.screen_name}_${ts}_${t.id_str}${_index}.${extension}`;
+                        let filename_template = vars.customDownloadTemplate;
 
-                            // use the filename from the user's custom download template, if any
-                            if (
-                                filename_template &&
-                                filename_template.length > 0
-                            ) {
-                                const filesave_map = {
-                                    user_screen_name: t.user.screen_name,
-                                    user_name: t.user.name,
-                                    extension: extension,
-                                    timestamp: ts,
-                                    id: t.id_str,
-                                    index: _index,
-                                    filename: url.pathname.substring(
-                                        url.pathname.lastIndexOf("/") + 1,
-                                        url.pathname.lastIndexOf(".")
-                                    ),
-                                };
-                                filename = filename_template.replace(
-                                    /\{([\w]+)\}/g,
-                                    (_, key) => filesave_map[key]
-                                );
-                            }
+                        // use the filename from the user's custom download template, if any
+                        if (
+                            filename_template &&
+                            filename_template.length > 0
+                        ) {
+                            const filesave_map = {
+                                user_screen_name: t.user.screen_name,
+                                user_name: t.user.name,
+                                extension: extension,
+                                timestamp: ts,
+                                id: t.id_str,
+                                index: _index,
+                                filename: url.pathname.substring(
+                                    url.pathname.lastIndexOf("/") + 1,
+                                    url.pathname.lastIndexOf(".")
+                                ),
+                            };
+                            filename = filename_template.replace(
+                                /\{([\w]+)\}/g,
+                                (_, key) => filesave_map[key]
+                            );
+                        }
 
-                            a.download = filename;
-                            a.click();
-                            a.remove();
-                        })
-                        .catch((e) => {
-                            downloading = false;
-                            console.error(e);
-                        });
-                });
+                        a.download = filename;
+                        a.click();
+                        a.remove();
+                    })
+                    .catch((e) => {
+                        downloading = false;
+                        console.error(e);
+                    });
             });
+        };
+        if (t.extended_entities && t.extended_entities.media.length > 0) {
+            if (tweetInteractMoreMenuDownload)
+                tweetInteractMoreMenuDownload.addEventListener(
+                    "click",
+                    downloadMedia
+                );
+            if (tweetInteractDownload)
+                tweetInteractDownload.addEventListener("click", downloadMedia);
         }
         if (
             t.extended_entities &&
@@ -5794,4 +6035,1229 @@ function renderNotification(n, options = {}) {
 
 function replaceAll(str, find, replace) {
     return str.split(find).join(replace);
+}
+
+function getCountryFlag(country) {
+    let map = [ //mostly accurate to internal twitter mapping
+        {
+            name: 'Andorra',
+            code: 'AD',
+            emoji: '🇦🇩'
+        },
+        {
+            name: 'United Arab Emirates',
+            code: 'AE',
+            emoji: '🇦🇪'
+        },
+        {
+            name: 'Afghanistan',
+            code: 'AF',
+            emoji: '🇦🇫'
+        },
+        {
+            name: 'Antigua and Barbuda',
+            code: 'AG',
+            emoji: '🇦🇬'
+        },
+        {
+            name: 'Anguilla',
+            code: 'AI',
+            emoji: '🇦🇮'
+        },
+        {
+            name: 'Albania',
+            code: 'AL',
+            emoji: '🇦🇱'
+        },
+        {
+            name: 'Armenia',
+            code: 'AM',
+            emoji: '🇦🇲'
+        },
+        {
+            name: 'Angola',
+            code: 'AO',
+            emoji: '🇦🇴'
+        },
+        {
+            name: 'Antarctica',
+            code: 'AQ',
+            emoji: '🇦🇶'
+        },
+        {
+            name: 'Argentina',
+            code: 'AR',
+            emoji: '🇦🇷'
+        },
+        {
+            name: 'American Samoa',
+            code: 'AS',
+            emoji: '🇦🇸'
+        },
+        {
+            name: 'Austria',
+            code: 'AT',
+            emoji: '🇦🇹'
+        },
+        {
+            name: 'Australia',
+            code: 'AU',
+            emoji: '🇦🇺'
+        },
+        {
+            name: 'Aruba',
+            code: 'AW',
+            emoji: '🇦🇼'
+        },
+        {
+            name: 'Åland Islands',
+            code: 'AX',
+            emoji: '🇦🇽'
+        },
+        {
+            name: 'Azerbaijan',
+            code: 'AZ',
+            emoji: '🇦🇿'
+        },
+        {
+            name: 'Bosnia and Herzegovina',
+            code: 'BA',
+            emoji: '🇧🇦'
+        },
+        {
+            name: 'Barbados',
+            code: 'BB',
+            emoji: '🇧🇧'
+        },
+        {
+            name: 'Bangladesh',
+            code: 'BD',
+            emoji: '🇧🇩'
+        },
+        {
+            name: 'Belgium',
+            code: 'BE',
+            emoji: '🇧🇪'
+        },
+        {
+            name: 'Burkina Faso',
+            code: 'BF',
+            emoji: '🇧🇫'
+        },
+        {
+            name: 'Bulgaria',
+            code: 'BG',
+            emoji: '🇧🇬'
+        },
+        {
+            name: 'Bahrain',
+            code: 'BH',
+            emoji: '🇧🇭'
+        },
+        {
+            name: 'Burundi',
+            code: 'BI',
+            emoji: '🇧🇮'
+        },
+        {
+            name: 'Benin',
+            code: 'BJ',
+            emoji: '🇧🇯'
+        },
+        {
+            name: 'Saint Barthélemy',
+            code: 'BL',
+            emoji: '🇧🇱'
+        },
+        {
+            name: 'Bermuda',
+            code: 'BM',
+            emoji: '🇧🇲'
+        },
+        {
+            name: 'Brunei Darussalam',
+            code: 'BN',
+            emoji: '🇧🇳'
+        },
+        {
+            name: 'Bolivia',
+            code: 'BO',
+            emoji: '🇧🇴'
+        },
+        {
+            name: 'Brazil',
+            code: 'BR',
+            emoji: '🇧🇷'
+        },
+        {
+            name: 'Bahamas',
+            code: 'BS',
+            emoji: '🇧🇸'
+        },
+        {
+            name: 'Bhutan',
+            code: 'BT',
+            emoji: '🇧🇹'
+        },
+        {
+            name: 'Botswana',
+            code: 'BW',
+            emoji: '🇧🇼'
+        },
+        {
+            name: 'Belarus',
+            code: 'BY',
+            emoji: '🇧🇾'
+        },
+        {
+            name: 'Belize',
+            code: 'BZ',
+            emoji: '🇧🇿'
+        },
+        {
+            name: 'Canada',
+            code: 'CA',
+            emoji: '🇨🇦'
+        },
+        {
+            name: 'Cocos (Keeling) Islands',
+            code: 'CC',
+            emoji: '🇨🇨'
+        },
+        {
+            name: 'Congo',
+            code: 'CD',
+            emoji: '🇨🇩'
+        },
+        {
+            name: 'Central African Republic',
+            code: 'CF',
+            emoji: '🇨🇫'
+        },
+        {
+            name: 'Republic of the Congo',
+            code: 'CG',
+            emoji: '🇨🇬'
+        },
+        {
+            name: 'Switzerland',
+            code: 'CH',
+            emoji: '🇨🇭'
+        },
+        {
+            name: 'Côte d\'Ivoire',
+            code: 'CI',
+            emoji: '🇨🇮'
+        },
+        {
+            name: 'Cook Islands',
+            code: 'CK',
+            emoji: '🇨🇰'
+        },
+        {
+            name: 'Chile',
+            code: 'CL',
+            emoji: '🇨🇱'
+        },
+        {
+            name: 'Cameroon',
+            code: 'CM',
+            emoji: '🇨🇲'
+        },
+        {
+            name: 'China',
+            code: 'CN',
+            emoji: '🇨🇳'
+        },
+        {
+            name: 'Colombia',
+            code: 'CO',
+            emoji: '🇨🇴'
+        },
+        {
+            name: 'Costa Rica',
+            code: 'CR',
+            emoji: '🇨🇷'
+        },
+        {
+            name: 'Cuba',
+            code: 'CU',
+            emoji: '🇨🇺'
+        },
+        {
+            name: 'Curaçao',
+            code: 'CW',
+            emoji: '🇨🇼'
+        },
+        {
+            name: 'Cape Verde',
+            code: 'CV',
+            emoji: '🇨🇻'
+        },
+        {
+            name: 'Christmas Island',
+            code: 'CX',
+            emoji: '🇨🇽'
+        },
+        {
+            name: 'Cyprus',
+            code: 'CY',
+            emoji: '🇨🇾'
+        },
+        {
+            name: 'Czech Republic',
+            code: 'CZ',
+            emoji: '🇨🇿'
+        },
+        {
+            name: 'Germany',
+            code: 'DE',
+            emoji: '🇩🇪'
+        },
+        {
+            name: 'Djibouti',
+            code: 'DJ',
+            emoji: '🇩🇯'
+        },
+        {
+            name: 'Denmark',
+            code: 'DK',
+            emoji: '🇩🇰'
+        },
+        {
+            name: 'Dominica',
+            code: 'DM',
+            emoji: '🇩🇲'
+        },
+        {
+            name: 'Dominican Republic',
+            code: 'DO',
+            emoji: '🇩🇴'
+        },
+        {
+            name: 'Algeria',
+            code: 'DZ',
+            emoji: '🇩🇿'
+        },
+        {
+            name: 'Ecuador',
+            code: 'EC',
+            emoji: '🇪🇨'
+        },
+        {
+            name: 'Estonia',
+            code: 'EE',
+            emoji: '🇪🇪'
+        },
+        {
+            name: 'Egypt',
+            code: 'EG',
+            emoji: '🇪🇬'
+        },
+        {
+            name: 'Eritrea',
+            code: 'ER',
+            emoji: '🇪🇷'
+        },
+        {
+            name: 'Spain',
+            code: 'ES',
+            emoji: '🇪🇸'
+        },
+        {
+            name: 'Ethiopia',
+            code: 'ET',
+            emoji: '🇪🇹'
+        },
+        {
+            name: 'Finland',
+            code: 'FI',
+            emoji: '🇫🇮'
+        },
+        {
+            name: 'Fiji',
+            code: 'FJ',
+            emoji: '🇫🇯'
+        },
+        {
+            name: 'Falkland Islands',
+            code: 'FK',
+            emoji: '🇫🇰'
+        },
+        {
+            name: 'Micronesia',
+            code: 'FM',
+            emoji: '🇫🇲'
+        },
+        {
+            name: 'Faroe Islands',
+            code: 'FO',
+            emoji: '🇫🇴'
+        },
+        {
+            name: 'France',
+            code: 'FR',
+            emoji: '🇫🇷'
+        },
+        {
+            name: 'Gabon',
+            code: 'GA',
+            emoji: '🇬🇦'
+        },
+        {
+            name: 'United Kingdom',
+            code: 'GB',
+            emoji: '🇬🇧'
+        },
+        {
+            name: 'Grenada',
+            code: 'GD',
+            emoji: '🇬🇩'
+        },
+        {
+            name: 'Georgia',
+            code: 'GE',
+            emoji: '🇬🇪'
+        },
+        {
+            name: 'French Guiana',
+            code: 'GF',
+            emoji: '🇬🇫'
+        },
+        {
+            name: 'Guernsey',
+            code: 'GG',
+            emoji: '🇬🇬'
+        },
+        {
+            name: 'Ghana',
+            code: 'GH',
+            emoji: '🇬🇭'
+        },
+        {
+            name: 'Gibraltar',
+            code: 'GI',
+            emoji: '🇬🇮'
+        },
+        {
+            name: 'Greenland',
+            code: 'GL',
+            emoji: '🇬🇱'
+        },
+        {
+            name: 'Gambia',
+            code: 'GM',
+            emoji: '🇬🇲'
+        },
+        {
+            name: 'Guinea',
+            code: 'GN',
+            emoji: '🇬🇳'
+        },
+        {
+            name: 'Guadeloupe',
+            code: 'GP',
+            emoji: '🇬🇵'
+        },
+        {
+            name: 'Equatorial Guinea',
+            code: 'GQ',
+            emoji: '🇬🇶'
+        },
+        {
+            name: 'Greece',
+            code: 'GR',
+            emoji: '🇬🇷'
+        },
+        {
+            name: 'South Georgia and South Sandwich Islands',
+            code: 'GS',
+            emoji: '🇬🇸'
+        },
+        {
+            name: 'Guatemala',
+            code: 'GT',
+            emoji: '🇬🇹'
+        },
+        {
+            name: 'Guam',
+            code: 'GU',
+            emoji: '🇬🇺'
+        },
+        {
+            name: 'Guinea-Bissau',
+            code: 'GW',
+            emoji: '🇬🇼'
+        },
+        {
+            name: 'Guyana',
+            code: 'GY',
+            emoji: '🇬🇾'
+        },
+        {
+            name: 'Hong Kong',
+            code: 'HK',
+            emoji: '🇭🇰'
+        },
+        {
+            name: 'Honduras',
+            code: 'HN',
+            emoji: '🇭🇳'
+        },
+        {
+            name: 'Croatia',
+            code: 'HR',
+            emoji: '🇭🇷'
+        },
+        {
+            name: 'Haiti',
+            code: 'HT',
+            emoji: '🇭🇹'
+        },
+        {
+            name: 'Hungary',
+            code: 'HU',
+            emoji: '🇭🇺'
+        },
+        {
+            name: 'Indonesia',
+            code: 'ID',
+            emoji: '🇮🇩'
+        },
+        {
+            name: 'Ireland',
+            code: 'IE',
+            emoji: '🇮🇪'
+        },
+        {
+            name: 'Israel',
+            code: 'IL',
+            emoji: '🇮🇱'
+        },
+        {
+            name: 'Isle of Man',
+            code: 'IM',
+            emoji: '🇮🇲'
+        },
+        {
+            name: 'India',
+            code: 'IN',
+            emoji: '🇮🇳'
+        },
+        {
+            name: 'British Indian Ocean Territory',
+            code: 'IO',
+            emoji: '🇮🇴'
+        },
+        {
+            name: 'Iraq',
+            code: 'IQ',
+            emoji: '🇮🇶'
+        },
+        {
+            name: 'Iran',
+            code: 'IR',
+            emoji: '🇮🇷'
+        },
+        {
+            name: 'Iceland',
+            code: 'IS',
+            emoji: '🇮🇸'
+        },
+        {
+            name: 'Italy',
+            code: 'IT',
+            emoji: '🇮🇹'
+        },
+        {
+            name: 'Jersey',
+            code: 'JE',
+            emoji: '🇯🇪'
+        },
+        {
+            name: 'Jamaica',
+            code: 'JM',
+            emoji: '🇯🇲'
+        },
+        {
+            name: 'Jordan',
+            code: 'JO',
+            emoji: '🇯🇴'
+        },
+        {
+            name: 'Japan',
+            code: 'JP',
+            emoji: '🇯🇵'
+        },
+        {
+            name: 'Kenya',
+            code: 'KE',
+            emoji: '🇰🇪'
+        },
+        {
+            name: 'Kosovo',
+            code: 'XK',
+            emoji: '🇽🇰'
+        },
+        {
+            name: 'Kyrgyzstan',
+            code: 'KG',
+            emoji: '🇰🇬'
+        },
+        {
+            name: 'Cambodia',
+            code: 'KH',
+            emoji: '🇰🇭'
+        },
+        {
+            name: 'Kiribati',
+            code: 'KI',
+            emoji: '🇰🇮'
+        },
+        {
+            name: 'Comoros',
+            code: 'KM',
+            emoji: '🇰🇲'
+        },
+        {
+            name: 'Saint Kitts and Nevis',
+            code: 'KN',
+            emoji: '🇰🇳'
+        },
+        {
+            name: 'Democratic People\'s Republic of Korea',
+            code: 'KP',
+            emoji: '🇰🇵'
+        },
+        {
+            name: 'South Korea',
+            code: 'KR',
+            emoji: '🇰🇷'
+        },
+        {
+            name: 'Kuwait',
+            code: 'KW',
+            emoji: '🇰🇼'
+        },
+        {
+            name: 'Cayman Islands',
+            code: 'KY',
+            emoji: '🇰🇾'
+        },
+        {
+            name: 'Kazakhstan',
+            code: 'KZ',
+            emoji: '🇰🇿'
+        },
+        {
+            name: 'Laos',
+            code: 'LA',
+            emoji: '🇱🇦'
+        },
+        {
+            name: 'Lebanon',
+            code: 'LB',
+            emoji: '🇱🇧'
+        },
+        {
+            name: 'Saint Lucia',
+            code: 'LC',
+            emoji: '🇱🇨'
+        },
+        {
+            name: 'Liechtenstein',
+            code: 'LI',
+            emoji: '🇱🇮'
+        },
+        {
+            name: 'Sri Lanka',
+            code: 'LK',
+            emoji: '🇱🇰'
+        },
+        {
+            name: 'Liberia',
+            code: 'LR',
+            emoji: '🇱🇷'
+        },
+        {
+            name: 'Lesotho',
+            code: 'LS',
+            emoji: '🇱🇸'
+        },
+        {
+            name: 'Lithuania',
+            code: 'LT',
+            emoji: '🇱🇹'
+        },
+        {
+            name: 'Luxembourg',
+            code: 'LU',
+            emoji: '🇱🇺'
+        },
+        {
+            name: 'Latvia',
+            code: 'LV',
+            emoji: '🇱🇻'
+        },
+        {
+            name: 'Libya',
+            code: 'LY',
+            emoji: '🇱🇾'
+        },
+        {
+            name: 'Morocco',
+            code: 'MA',
+            emoji: '🇲🇦'
+        },
+        {
+            name: 'Monaco',
+            code: 'MC',
+            emoji: '🇲🇨'
+        },
+        {
+            name: 'Moldova',
+            code: 'MD',
+            emoji: '🇲🇩'
+        },
+        {
+            name: 'Montenegro',
+            code: 'ME',
+            emoji: '🇲🇪'
+        },
+        {
+            name: 'Saint Martin',
+            code: 'MF',
+            emoji: '🇲🇫'
+        },
+        {
+            name: 'Madagascar',
+            code: 'MG',
+            emoji: '🇲🇬'
+        },
+        {
+            name: 'Marshall Islands',
+            code: 'MH',
+            emoji: '🇲🇭'
+        },
+        {
+            name: 'Macedonia',
+            code: 'MK',
+            emoji: '🇲🇰'
+        },
+        {
+            name: 'Mali',
+            code: 'ML',
+            emoji: '🇲🇱'
+        },
+        {
+            name: 'Myanmar',
+            code: 'MM',
+            emoji: '🇲🇲'
+        },
+        {
+            name: 'Mongolia',
+            code: 'MN',
+            emoji: '🇲🇳'
+        },
+        {
+            name: 'Macao',
+            code: 'MO',
+            emoji: '🇲🇴'
+        },
+        {
+            name: 'Northern Mariana Islands',
+            code: 'MP',
+            emoji: '🇲🇵'
+        },
+        {
+            name: 'Martinique',
+            code: 'MQ',
+            emoji: '🇲🇶'
+        },
+        {
+            name: 'Mauritania',
+            code: 'MR',
+            emoji: '🇲🇷'
+        },
+        {
+            name: 'Montserrat',
+            code: 'MS',
+            emoji: '🇲🇸'
+        },
+        {
+            name: 'Malta',
+            code: 'MT',
+            emoji: '🇲🇹'
+        },
+        {
+            name: 'Mauritius',
+            code: 'MU',
+            emoji: '🇲🇺'
+        },
+        {
+            name: 'Maldives',
+            code: 'MV',
+            emoji: '🇲🇻'
+        },
+        {
+            name: 'Malawi',
+            code: 'MW',
+            emoji: '🇲🇼'
+        },
+        {
+            name: 'Mexico',
+            code: 'MX',
+            emoji: '🇲🇽'
+        },
+        {
+            name: 'Malaysia',
+            code: 'MY',
+            emoji: '🇲🇾'
+        },
+        {
+            name: 'Mozambique',
+            code: 'MZ',
+            emoji: '🇲🇿'
+        },
+        {
+            name: 'Namibia',
+            code: 'NA',
+            emoji: '🇳🇦'
+        },
+        {
+            name: 'New Caledonia',
+            code: 'NC',
+            emoji: '🇳🇨'
+        },
+        {
+            name: 'Niger',
+            code: 'NE',
+            emoji: '🇳🇪'
+        },
+        {
+            name: 'Norfolk Island',
+            code: 'NF',
+            emoji: '🇳🇫'
+        },
+        {
+            name: 'Nigeria',
+            code: 'NG',
+            emoji: '🇳🇬'
+        },
+        {
+            name: 'Nicaragua',
+            code: 'NI',
+            emoji: '🇳🇮'
+        },
+        {
+            name: 'Netherlands',
+            code: 'NL',
+            emoji: '🇳🇱'
+        },
+        {
+            name: 'Norway',
+            code: 'NO',
+            emoji: '🇳🇴'
+        },
+        {
+            name: 'Nepal',
+            code: 'NP',
+            emoji: '🇳🇵'
+        },
+        {
+            name: 'Nauru',
+            code: 'NR',
+            emoji: '🇳🇷'
+        },
+        {
+            name: 'Niue',
+            code: 'NU',
+            emoji: '🇳🇺'
+        },
+        {
+            name: 'New Zealand',
+            code: 'NZ',
+            emoji: '🇳🇿'
+        },
+        {
+            name: 'Oman',
+            code: 'OM',
+            emoji: '🇴🇲'
+        },
+        {
+            name: 'Panama',
+            code: 'PA',
+            emoji: '🇵🇦'
+        },
+        {
+            name: 'Peru',
+            code: 'PE',
+            emoji: '🇵🇪'
+        },
+        {
+            name: 'French Polynesia',
+            code: 'PF',
+            emoji: '🇵🇫'
+        },
+        {
+            name: 'Papua New Guinea',
+            code: 'PG',
+            emoji: '🇵🇬'
+        },
+        {
+            name: 'Philippines',
+            code: 'PH',
+            emoji: '🇵🇭'
+        },
+        {
+            name: 'Pakistan',
+            code: 'PK',
+            emoji: '🇵🇰'
+        },
+        {
+            name: 'Poland',
+            code: 'PL',
+            emoji: '🇵🇱'
+        },
+        {
+            name: 'Saint Pierre and Miquelon',
+            code: 'PM',
+            emoji: '🇵🇲'
+        },
+        {
+            name: 'Pitcairn Islands',
+            code: 'PN',
+            emoji: '🇵🇳'
+        },
+        {
+            name: 'Puerto Rico',
+            code: 'PR',
+            emoji: '🇵🇷'
+        },
+        {
+            name: 'Palestine',
+            code: 'PS',
+            emoji: '🇵🇸'
+        },
+        {
+            name: 'Portugal',
+            code: 'PT',
+            emoji: '🇵🇹'
+        },
+        {
+            name: 'Palau',
+            code: 'PW',
+            emoji: '🇵🇼'
+        },
+        {
+            name: 'Paraguay',
+            code: 'PY',
+            emoji: '🇵🇾'
+        },
+        {
+            name: 'Qatar',
+            code: 'QA',
+            emoji: '🇶🇦'
+        },
+        {
+            name: 'Réunion',
+            code: 'RE',
+            emoji: '🇷🇪'
+        },
+        {
+            name: 'Romania',
+            code: 'RO',
+            emoji: '🇷🇴'
+        },
+        {
+            name: 'Serbia',
+            code: 'RS',
+            emoji: '🇷🇸'
+        },
+        {
+            name: 'Russian Federation',
+            code: 'RU',
+            emoji: '🇷🇺'
+        },
+        {
+            name: 'Rwanda',
+            code: 'RW',
+            emoji: '🇷🇼'
+        },
+        {
+            name: 'Saudi Arabia',
+            code: 'SA',
+            emoji: '🇸🇦'
+        },
+        {
+            name: 'Solomon Islands',
+            code: 'SB',
+            emoji: '🇸🇧'
+        },
+        {
+            name: 'Seychelles',
+            code: 'SC',
+            emoji: '🇸🇨'
+        },
+        {
+            name: 'Sudan',
+            code: 'SD',
+            emoji: '🇸🇩'
+        },
+        {
+            name: 'Sweden',
+            code: 'SE',
+            emoji: '🇸🇪'
+        },
+        {
+            name: 'Singapore',
+            code: 'SG',
+            emoji: '🇸🇬'
+        },
+        {
+            name: 'Saint Helena',
+            code: 'SH',
+            emoji: '🇸🇭'
+        },
+        {
+            name: 'Slovenia',
+            code: 'SI',
+            emoji: '🇸🇮'
+        },
+        {
+            name: 'Svalbard and Jan Mayen',
+            code: 'SJ',
+            emoji: '🇸🇯'
+        },
+        {
+            name: 'Slovakia',
+            code: 'SK',
+            emoji: '🇸🇰'
+        },
+        {
+            name: 'Sierra Leone',
+            code: 'SL',
+            emoji: '🇸🇱'
+        },
+        {
+            name: 'San Marino',
+            code: 'SM',
+            emoji: '🇸🇲'
+        },
+        {
+            name: 'Senegal',
+            code: 'SN',
+            emoji: '🇸🇳'
+        },
+        {
+            name: 'Somalia',
+            code: 'SO',
+            emoji: '🇸🇴'
+        },
+        {
+            name: 'Suriname',
+            code: 'SR',
+            emoji: '🇸🇷'
+        },
+        {
+            name: 'South Sudan',
+            code: 'SS',
+            emoji: '🇸🇸'
+        },
+        {
+            name: 'São Tomé and Príncipe',
+            code: 'ST',
+            emoji: '🇸🇹'
+        },
+        {
+            name: 'El Salvador',
+            code: 'SV',
+            emoji: '🇸🇻'
+        },
+        {
+            name: 'Syria',
+            code: 'SY',
+            emoji: '🇸🇾'
+        },
+        {
+            name: 'Swaziland',
+            code: 'SZ',
+            emoji: '🇸🇿'
+        },
+        {
+            name: 'Turks and Caicos Islands',
+            code: 'TC',
+            emoji: '🇹🇨'
+        },
+        {
+            name: 'Chad',
+            code: 'TD',
+            emoji: '🇹🇩'
+        },
+        {
+            name: 'Togo',
+            code: 'TG',
+            emoji: '🇹🇬'
+        },
+        {
+            name: 'Thailand',
+            code: 'TH',
+            emoji: '🇹🇭'
+        },
+        {
+            name: 'Tajikistan',
+            code: 'TJ',
+            emoji: '🇹🇯'
+        },
+        {
+            name: 'Tokelau',
+            code: 'TK',
+            emoji: '🇹🇰'
+        },
+        {
+            name: 'Timor-Leste',
+            code: 'TL',
+            emoji: '🇹🇱'
+        },
+        {
+            name: 'Turkmenistan',
+            code: 'TM',
+            emoji: '🇹🇲'
+        },
+        {
+            name: 'Tunisia',
+            code: 'TN',
+            emoji: '🇹🇳'
+        },
+        {
+            name: 'Tonga',
+            code: 'TO',
+            emoji: '🇹🇴'
+        },
+        {
+            name: 'Turkey',
+            code: 'TR',
+            emoji: '🇹🇷'
+        },
+        {
+            name: 'Trinidad and Tobago',
+            code: 'TT',
+            emoji: '🇹🇹'
+        },
+        {
+            name: 'Tuvalu',
+            code: 'TV',
+            emoji: '🇹🇻'
+        },
+        {
+            name: 'Taiwan',
+            code: 'TW',
+            emoji: '🇹🇼'
+        },
+        {
+            name: 'Tanzania',
+            code: 'TZ',
+            emoji: '🇹🇿'
+        },
+        {
+            name: 'Ukraine',
+            code: 'UA',
+            emoji: '🇺🇦'
+        },
+        {
+            name: 'Uganda',
+            code: 'UG',
+            emoji: '🇺🇬'
+        },
+        {
+            name: 'United States',
+            code: 'US',
+            emoji: '🇺🇸'
+        },
+        {
+            name: 'Uruguay',
+            code: 'UY',
+            emoji: '🇺🇾'
+        },
+        {
+            name: 'Uzbekistan',
+            code: 'UZ',
+            emoji: '🇺🇿'
+        },
+        {
+            name: 'Vatican City',
+            code: 'VA',
+            emoji: '🇻🇦'
+        },
+        {
+            name: 'Saint Vincent and Grenadines',
+            code: 'VC',
+            emoji: '🇻🇨'
+        },
+        {
+            name: 'Venezuela',
+            code: 'VE',
+            emoji: '🇻🇪'
+        },
+        {
+            name: 'British Virgin Islands',
+            code: 'VG',
+            emoji: '🇻🇬'
+        },
+        {
+            name: 'U.S. Virgin Islands',
+            code: 'VI',
+            emoji: '🇻🇮'
+        },
+        {
+            name: 'Viet Nam',
+            code: 'VN',
+            emoji: '🇻🇳'
+        },
+        {
+            name: 'Vanuatu',
+            code: 'VU',
+            emoji: '🇻🇺'
+        },
+        {
+            name: 'Wallis and Futuna',
+            code: 'WF',
+            emoji: '🇼🇫'
+        },
+        {
+            name: 'Samoa',
+            code: 'WS',
+            emoji: '🇼🇸'
+        },
+        {
+            name: 'Yemen',
+            code: 'YE',
+            emoji: '🇾🇪'
+        },
+        {
+            name: 'Mayotte',
+            code: 'YT',
+            emoji: '🇾🇹'
+        },
+        {
+            name: 'South Africa',
+            code: 'ZA',
+            emoji: '🇿🇦'
+        },
+        {
+            name: 'Zambia',
+            code: 'ZM',
+            emoji: '🇿🇲'
+        },
+        {
+            name: 'Zimbabwe',
+            code: 'ZW',
+            emoji: '🇿🇼'
+        }
+    ]
+
+    let lower = country.toLowerCase()
+    let flag = map.find(c => c.name.toLowerCase() === lower || c.code.toLowerCase() === lower)?.emoji;
+
+    return flag || null;
 }

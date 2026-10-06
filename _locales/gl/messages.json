@@ -347,11 +347,10 @@
     "notifications_error": { "message": "Algunhas notificacións non se puideron cargar debido a erros." },
     "tweet_error": { "message": "Algúns chíos non se puideron cargar debido a erros." },
     "error_instructions": {
-        "message": "Copia o texto abaixo e envíao ao $AT1$seguimento de problemas$AT2$ ou ao $AT3$meu correo$AT2$. Grazas!",
+        "message": "Copia o texto abaixo e envíao ao $AT1$seguimento de problemas$AT2$. Grazas!",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Inicialización" },

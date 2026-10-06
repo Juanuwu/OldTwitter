@@ -349,10 +349,10 @@
     "notifications_error": {"message": "Einige Benachrichtigungen konnten aufgrund von Fehlern nicht geladen werden."},
     "tweet_error": {"message": "Einige Tweets konnten aufgrund von Fehlern nicht geladen werden."},
     "error_instructions": {
-        "message": "Bitte kopiere den Text unten und sende ihn an $AT1$die Fehlerverfolgung$AT2$ oder $AT3$meine E-Mail-Adresse$AT2$. Danke!",
+        "message": "Bitte kopiere den Text unten und sende ihn an $AT1$die Fehlerverfolgung$AT2$. Danke!",
         "placeholders": {
             "at1": {"content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>"},
-            "at2": {"content": "</a>"}, "at3": {"content": "<a target='_blank' href='mailto:admin@dimden.dev'>"}
+            "at2": {"content": "</a>"}
         }
     },
     "initialization": {"message": "Initialisierung"},

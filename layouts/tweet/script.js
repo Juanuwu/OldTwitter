@@ -121,7 +121,12 @@ function updateUserData() {
     });
 }
 async function updateReplies(id, c) {
-    if(!c) document.getElementById('timeline').innerHTML = '';
+    if(!c) {
+        document.getElementById('timeline').innerHTML = '';
+        tweets = [];
+        seenReplies = [];
+        insertedMores = [];
+    }
     let tl, tweetLikers;
     try {
         let [tlData, tweetLikersData] = await Promise.allSettled([API.tweet.getRepliesV2(id, c), API.tweet.getLikers(id, undefined, 10, false)]);
@@ -187,7 +192,7 @@ async function updateReplies(id, c) {
                     bigFont: true
                 });
             }
-            if(t.data.limited_actions !== "non_compliant") appendComposeComponent(tlContainer, t.data);
+            if(t.data.limited_actions !== "non_compliant") await appendComposeComponent(tlContainer, t.data);
         }
         if(t.type === 'tweet') {
             await appendTweet(t.data, tlContainer, {
@@ -340,6 +345,7 @@ async function updateRetweetsWithComments(id, c) {
         tweetRetweeters = tweetRetweeters.list;
     } catch(e) {
         console.error(e);
+        loadingNewTweets = false;
         return retweetCommentsCursor = undefined;
     }
     let retweetDiv = document.getElementById('retweets_with_comments');
@@ -353,6 +359,7 @@ async function updateRetweetsWithComments(id, c) {
         retweetDiv.appendChild(h1);
     }
     if(!retweetCommentsCursor || tweetRetweeters.length === 0) {
+        retweetCommentsCursor = undefined;
         document.getElementById('retweets_with_comments-more').hidden = true;
     } else {
         document.getElementById('retweets_with_comments-more').hidden = false;
@@ -363,6 +370,7 @@ async function updateRetweetsWithComments(id, c) {
         await appendTweet(tweetRetweeters[i], retweetDiv);
     }
     document.getElementById('loading-box').hidden = true;
+    loadingNewTweets = false;
 }
 
 // Render
@@ -434,6 +442,7 @@ async function appendComposeComponent(container, replyTweet) {
             <textarea id="new-tweet-text" placeholder="${replyMessage}" maxlength="25000"></textarea>
             <div id="new-tweet-user-search" class="box" hidden></div>
             <div id="new-tweet-media-div" title="${LOC.add_media.message}">
+                <span id="new-tweet-gif-btn" title="${LOC.gif.message}"></span>
                 <span id="new-tweet-media"></span>
             </div>
             <div id="new-tweet-focused" hidden>
@@ -518,8 +527,19 @@ async function appendComposeComponent(container, replyTweet) {
             }
         }
     });
-    document.getElementById('new-tweet-media-div').addEventListener('click', async () => {
+    document.getElementById('new-tweet-media').addEventListener('click', async (e) => {
+        e.stopPropagation();
         getMedia(mediaToUpload, document.getElementById('new-tweet-media-c'));
+    });
+    document.getElementById('new-tweet-gif-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('new-tweet').click();
+        createGifPicker(mediaToUpload, document.getElementById('new-tweet-media-c'));
+    });
+    document.getElementById('new-tweet-media-div').addEventListener('click', async (e) => {
+        if (e.target === document.getElementById('new-tweet-media-div')) {
+            document.getElementById('new-tweet-media').click();
+        }
     });
     let newTweetUserSearch = document.getElementById("new-tweet-user-search");
     let newTweetText = document.getElementById('new-tweet-text');
@@ -821,15 +841,21 @@ async function loadPage() {
         // loading new tweets
         if ((window.innerHeight + window.scrollY) >= document.body.scrollHeight - 700) {
             if (loadingNewTweets) return;
-            if(cursor) {
+            if(subpage === 'tweet' && cursor) {
                 loadingNewTweets = true;
                 let path = location.pathname;
                 if(path.endsWith('/')) path = path.slice(0, -1);
                 updateReplies(path.split('/').slice(-1)[0], cursor);
-            } else if(likeCursor) {
+            } else if(subpage === 'likes' && likeCursor) {
                 loadingNewTweets = true;
                 let likesMoreButton = document.getElementById('likes-more');
                 if(likesMoreButton && !likesMoreButton.hidden) likesMoreButton.click();
+                else loadingNewTweets = false;
+            } else if(subpage === 'retweets_with_comments' && retweetCommentsCursor) {
+                loadingNewTweets = true;
+                let quotesMoreButton = document.getElementById('retweets_with_comments-more');
+                if(quotesMoreButton && !quotesMoreButton.hidden) quotesMoreButton.click();
+                else loadingNewTweets = false;
             }
         }
     }, { passive: true });    

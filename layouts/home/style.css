@@ -70,6 +70,7 @@ body {
 }
 
 #user-name {
+    text-overflow: ellipsis;
     bottom: 47px;
     color: var(--almost-black);
     font-size: 22px;
@@ -632,6 +633,18 @@ a:not(.tweet-header-info):not(.tweet-body-quote):hover,
     font: 20px var(--icon-font);
 }
 
+#new-tweet-gif-btn {
+    position: absolute;
+    right: 28px;
+    top: 0;
+    cursor: pointer;
+}
+#new-tweet-gif-btn:before {
+    color: var(--link-color);
+    content: "\f309";
+    font: 20px var(--icon-font);
+}
+
 #new-tweet-button {
     float: right;
     left: 76px;
@@ -952,6 +965,10 @@ a:not(.tweet-header-info):not(.tweet-body-quote):hover,
     .user-stat-div>h1 {
         font-size: 18px;
     }
+    #user-name {
+        font-size: 20px;
+        width: 152px;
+    }
     #trends {
         width: 238px
     }
@@ -990,5 +1007,23 @@ a:not(.tweet-header-info):not(.tweet-body-quote):hover,
     .tweet .tweet-header-name {
         white-space: pre !important;
         text-overflow: ellipsis;
+    }
+    #new-tweet {
+        overflow-x: clip;
+    }
+    #new-tweet-media-cc {
+        display: block;
+        left: 0;
+        margin: 6px 0 4px 40px;
+        max-width: calc(100% - 48px);
+    }
+    #new-tweet-media-c {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    #new-tweet-button {
+        left: 0 !important;
+        margin-right: 0 !important;
     }
 }

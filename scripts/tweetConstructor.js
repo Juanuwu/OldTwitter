@@ -366,9 +366,7 @@ async function constructQuotedTweet(
                 }
                 mediaElement.src = base_url;
             } else {
-                mediaElement.src = m.video_info.variants.find(
-                    (v) => v.content_type === "video/mp4"
-                ).url;
+                mediaElement.src = getPreferredVideoUrl(m.video_info.variants);
             }
             mediaElement.classList.add(
                 "tweet-media-element",
@@ -669,7 +667,7 @@ async function constructTweet(t, tweetConstructorArgs, options = {}) {
     // Main text content
     const longShortClass =
         vars.noBigFont ||
-        t.full_text.length > 280 ||
+        (t.full_text?.length ?? 0) > 280 ||
         !options.bigFont ||
         (!options.mainTweet && location.pathname.includes("/status/"))
             ? "tweet-body-text-long"
@@ -1264,6 +1262,19 @@ async function constructTweet(t, tweetConstructorArgs, options = {}) {
             )
         );
     }
+    if (
+        vars.showDownloadButton &&
+        t.extended_entities &&
+        t.extended_entities.media &&
+        t.extended_entities.media.length > 0
+    ) {
+        interactionArray.push(
+            elNew("span", {
+                class: ["tweet-button", "tweet-interact-download"],
+                title: LOC.download_media.message,
+            })
+        );
+    }
     interactionArray.push(
         elNew("span", { class: ["tweet-button", "tweet-interact-more"] })
     );
@@ -1620,6 +1631,10 @@ async function constructTweet(t, tweetConstructorArgs, options = {}) {
                         [LOC.upload_media_btn.message]
                     ),
                     " ",
+                    elNew("span", { class: ["tweet-reply-add-gif"] }, [
+                        LOC.gif_btn.message,
+                    ]),
+                    " ",
                     elNew("span", { class: ["tweet-reply-add-emoji"] }, [
                         LOC.emoji_btn.message,
                     ]),
@@ -1682,6 +1697,10 @@ async function constructTweet(t, tweetConstructorArgs, options = {}) {
                         },
                         [LOC.upload_media_btn.message]
                     ),
+                    " ",
+                    elNew("span", { class: ["tweet-quote-add-gif"] }, [
+                        LOC.gif_btn.message,
+                    ]),
                     " ",
                     elNew("span", { class: ["tweet-quote-add-emoji"] }, [
                         LOC.emoji_btn.message,

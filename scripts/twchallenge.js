@@ -5,29 +5,63 @@ let solveQueue = [];
 let solverReady = false;
 let solverErrored = false;
 let sentData = false;
+let solverGeneration = 0;
+let initGeneration = -1;
+let recoverPromise = null;
 
 let sandboxUrl = fetch(chrome.runtime.getURL(`sandbox.html`))
     .then((resp) => resp.blob())
     .then((blob) => URL.createObjectURL(blob))
     .catch(console.error);
 
+function requeuePendingSolves() {
+    let queued = new Set(solveQueue.map((t) => t.id));
+    for (let id of Object.keys(solveCallbacks)) {
+        let numId = +id;
+        let cb = solveCallbacks[id];
+        if (!cb || queued.has(numId)) continue;
+        solveQueue.push({ id: numId, path: cb.path, method: cb.method });
+        queued.add(numId);
+    }
+}
+
 function createSolverFrame() {
     if (solverIframe) solverIframe.remove();
+    solverReady = false;
+    requeuePendingSolves();
+    solverGeneration++;
+    let generation = solverGeneration;
     solverIframe = document.createElement("iframe");
-    //display:none causes animations to not play which breaks the challenge solver, so have to hide it in different way
-    solverIframe.style.position = "absolute";
-    solverIframe.width = "0px";
-    solverIframe.height = "0px";
+    solverIframe.style.position = "fixed";
+    solverIframe.style.left = "-9999px";
+    solverIframe.style.top = "0";
+    solverIframe.width = "10";
+    solverIframe.height = "10";
     solverIframe.style.border = "none";
-    solverIframe.style.opacity = 0;
+    solverIframe.style.opacity = "0";
     solverIframe.style.pointerEvents = "none";
     solverIframe.tabIndex = -1;
-    sandboxUrl.then((url) => (solverIframe.src = url));
+    let resolveLoaded;
+    solverIframe._loaded = new Promise((resolve) => {
+        resolveLoaded = resolve;
+    });
+    solverIframe.addEventListener("load", () => {
+        if (!solverIframe.src) return;
+        resolveLoaded();
+    });
+    sandboxUrl.then((url) => {
+        if (generation !== solverGeneration) return;
+        solverIframe.src = url;
+    });
     let injectedBody = document.getElementById("injected-body");
     if (injectedBody) {
         injectedBody.appendChild(solverIframe);
     } else {
         let int = setInterval(() => {
+            if (generation !== solverGeneration) {
+                clearInterval(int);
+                return;
+            }
             let injectedBody = document.getElementById("injected-body");
             if (injectedBody) {
                 injectedBody.appendChild(solverIframe);
@@ -45,7 +79,31 @@ function solveChallenge(path, method) {
             return;
         }
         let id = solveId++;
-        solveCallbacks[id] = { resolve, reject, time: Date.now() };
+        let settled = false;
+        let timeout = setTimeout(() => {
+            if (settled || !solveCallbacks[id]) return;
+            settled = true;
+            delete solveCallbacks[id];
+            solveQueue = solveQueue.filter((t) => t.id !== id);
+            reject("Solver timed out");
+        }, 30000);
+        solveCallbacks[id] = {
+            resolve: (v) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeout);
+                resolve(v);
+            },
+            reject: (e) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeout);
+                reject(e);
+            },
+            time: Date.now(),
+            path,
+            method,
+        };
         if (!solverReady || !solverIframe || !solverIframe.contentWindow) {
             solveQueue.push({ id, path, method });
         } else {
@@ -56,35 +114,59 @@ function solveChallenge(path, method) {
                 );
             } catch (e) {
                 console.error(`Error sending challenge to solver:`, e);
+                delete solveCallbacks[id];
+                clearTimeout(timeout);
+                settled = true;
                 reject(e);
             }
-            // setTimeout(() => {
-            //     if(solveCallbacks[id]) {
-            //         solveCallbacks[id].reject('Solver timed out');
-            //         delete solveCallbacks[id];
-            //     }
-            // }, 1750);
         }
     });
 }
 
+function recoverSolver(reason) {
+    if (solverErrored) return Promise.resolve();
+    if (recoverPromise) return recoverPromise;
+    console.warn("Recovering challenge solver:", reason);
+    recoverPromise = (async () => {
+        try {
+            createSolverFrame();
+            await initChallenge();
+            let start = Date.now();
+            while (
+                !solverReady &&
+                !solverErrored &&
+                Date.now() - start < 10000
+            ) {
+                await new Promise((r) => setTimeout(r, 50));
+            }
+        } finally {
+            recoverPromise = null;
+        }
+    })();
+    return recoverPromise;
+}
+
 setInterval(() => {
-    if (
-        !document.getElementById("loading-box").hidden &&
-        sentData &&
-        solveQueue.length
-    ) {
-        console.log(
-            "Something's wrong with the challenge solver, reloading",
-            solveQueue
-        );
-        createSolverFrame();
-        initChallenge();
+    if (!sentData || recoverPromise || solverErrored) return;
+    let loadingBox = document.getElementById("loading-box");
+    let loadingVisible = loadingBox && !loadingBox.hidden;
+    if (!solverReady && solveQueue.length) {
+        let oldest = Math.min(...solveQueue.map((t) => {
+            let cb = solveCallbacks[t.id];
+            return cb ? cb.time : Date.now();
+        }));
+        if (loadingVisible || Date.now() - oldest > 6000) {
+            console.log(
+                "Something's wrong with the challenge solver, reloading",
+                solveQueue
+            );
+            recoverSolver("watchdog");
+        }
     }
 }, 2000);
 
 window.addEventListener("message", (e) => {
-    if (e.source !== solverIframe.contentWindow) return;
+    if (!solverIframe || e.source !== solverIframe.contentWindow) return;
     let data = e.data;
     if (data.action === "solved" && typeof data.id === "number") {
         let { id, result } = data;
@@ -112,7 +194,10 @@ window.addEventListener("message", (e) => {
         location.href = `${location.pathname}?newtwitter=true`;
     } else if (data.action === "ready") {
         solverReady = true;
-        for (let task of solveQueue) {
+        let queue = solveQueue;
+        solveQueue = [];
+        for (let task of queue) {
+            if (!solveCallbacks[task.id]) continue;
             solverIframe.contentWindow.postMessage(
                 {
                     action: "solve",
@@ -149,16 +234,23 @@ fetch = async function (url, options) {
         url = `https://${host}${url}`;
     }
     let parsedUrl = new URL(url);
-    // try {
-    let solved = await solveChallenge(
-        parsedUrl.pathname,
-        options.method ? options.method.toUpperCase() : "GET"
-    );
+    let method = options.method ? options.method.toUpperCase() : "GET";
+    let solved;
+    try {
+        solved = await solveChallenge(parsedUrl.pathname, method);
+    } catch (e) {
+        if (
+            !solverErrored &&
+            (String(e).includes("Solver timed out") ||
+                String(e).includes("not initialized"))
+        ) {
+            await recoverSolver(e);
+            solved = await solveChallenge(parsedUrl.pathname, method);
+        } else {
+            throw e;
+        }
+    }
     options.headers["x-client-transaction-id"] = solved;
-    // } catch (e) {
-    //     console.error(`Error solving challenge for ${url}:`);
-    //     console.error(e);
-    // }
     if (
         options.method &&
         options.method.toUpperCase() === "POST" &&
@@ -171,6 +263,9 @@ fetch = async function (url, options) {
 };
 
 async function initChallenge() {
+    let generation = solverGeneration;
+    if (initGeneration === generation) return false;
+    initGeneration = generation;
     try {
         let homepageData;
         let sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -190,6 +285,8 @@ async function initChallenge() {
                 throw new Error("Failed to fetch homepage: " + e);
             }
         }
+        if (generation !== solverGeneration) return false;
+
         let dom = new DOMParser().parseFromString(homepageData, "text/html");
         let verificationKey = dom.querySelector(
             'meta[name="twitter-site-verification"]'
@@ -200,12 +297,20 @@ async function initChallenge() {
 
         let vendorCode = homepageData.match(/vendor.(\w+).js"/)[1];
         let challengePos = homepageData.match(/(\d+):"ondemand.s"/)[1];
-        let challengeCode = homepageData.match(new RegExp(`${challengePos}:"(\\w+)"`))[1];
+        let challengeCode = homepageData.match(
+            new RegExp(`${challengePos}:"(\\w+)"`)
+        )[1];
 
         OLDTWITTER_CONFIG.verificationKey = verificationKey;
 
-        function sendInit() {
+        async function sendInit() {
+            if (generation !== solverGeneration) return;
             sentData = true;
+            if (!solverIframe) return setTimeout(sendInit, 50);
+            try {
+                await Promise.race([solverIframe._loaded, sleep(5000)]);
+            } catch (e) {}
+            if (generation !== solverGeneration) return;
             if (!solverIframe || !solverIframe.contentWindow)
                 return setTimeout(sendInit, 50);
             solverIframe.contentWindow.postMessage(
@@ -219,7 +324,7 @@ async function initChallenge() {
                 "*"
             );
         }
-        setTimeout(sendInit, 50);
+        await sendInit();
         return true;
     } catch (e) {
         console.error(`Error during challenge init:`);

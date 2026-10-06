@@ -346,11 +346,10 @@
     "notifications_error": { "message": "No s'han pogut carregar algunes notificacions a causa dels errors." },
     "tweet_error": { "message": "No s'han pogut carregar alguns tuits a causa dels errors." },
     "error_instructions": {
-        "message": "Si us plau, copieu el text a continuació i envieu-lo a $AT1$seguiment d'incidències$AT2$ o $AT3$el meu correu electrònic$AT2$. Moltes gràcies!",
+        "message": "Si us plau, copieu el text a continuació i envieu-lo a $AT1$seguiment d'incidències$AT2$. Moltes gràcies!",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Inicialització" },

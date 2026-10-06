@@ -347,11 +347,10 @@
     "notifications_error": { "message": "エラーが発生したため、一部の通知を読み込めませんでした。" },
     "tweet_error": { "message": "エラーが発生したため、一部のツイートを読み込めませんでした。" },
     "error_instructions": {
-        "message": "下のテキストをコピーして、$AT1$GitHubのissue$AT2$ 、または $AT3$開発者のメール$AT2$ へ送信してください。よろしくお願いします！",
+        "message": "下のテキストをコピーして、$AT1$GitHubのissue$AT2$ へ送信してください。よろしくお願いします！",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "初期化" },

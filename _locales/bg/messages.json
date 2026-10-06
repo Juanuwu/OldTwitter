@@ -346,11 +346,10 @@
     "notifications_error": { "message": "Някои известия не можаха да бъдат заредени поради грешки." },
     "tweet_error": { "message": "Някои туитове не можаха да бъдат заредени поради грешки." },
     "error_instructions": {
-        "message": "Моля копирайте текста отдолу и го изпратете на $AT1$тракъра на проблеми$AT2$ или $AT3$моя имейл$AT2$. Благодаря!",
+        "message": "Моля копирайте текста отдолу и го изпратете на $AT1$тракъра на проблеми$AT2$. Благодаря!",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Инициализация" },

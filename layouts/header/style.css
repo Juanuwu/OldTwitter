@@ -161,7 +161,7 @@ input, textarea {
 .menu-active#messages:before {
     content: var(--messages-icon-active);
 }
-#pin-lists, #pin-bookmarks, #pin-profile {
+#pin-lists, #pin-bookmarks, #pin-profile, #pin-likes {
     background-color: var(--background-color);
 }
 #pin-profile:before {
@@ -182,6 +182,12 @@ input, textarea {
 .menu-active#pin-lists:before {
     content: var(--lists-icon-active);
 }
+#pin-likes:before {
+    content: var(--favorite-icon-content);
+}
+.menu-active#pin-likes:before {
+    content: var(--favorite-icon-content-click);
+}
 
 #navbar a:before {
     vertical-align: sub;
@@ -193,6 +199,7 @@ input, textarea {
 #navbar a {
     color: var(--darker-gray);
     text-decoration: none;
+    text-wrap: auto;
     z-index: 98;
 }
 
@@ -366,6 +373,40 @@ input, textarea {
     100% {
         opacity: 1
     }
+}
+
+.gif-picker-modal {
+    min-width: 420px;
+    max-width: 520px;
+    max-height: 70%;
+    margin: auto !important;
+    overflow-y: auto;
+    top: 10%;
+}
+.gif-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+.gif-picker-item {
+    display: block;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--darker-background-color, var(--border));
+    aspect-ratio: 1;
+}
+.gif-picker-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.gif-picker-item:hover {
+    outline: 2px solid var(--link-color);
+    outline-offset: -2px;
 }
 
 /* The Close Button */
@@ -600,6 +641,9 @@ input, textarea {
 #navbar-user-menu {
     min-width: 130px;
     margin-left: -24px;
+}
+#navbar-user-menu-newtwitter {
+    display: none;
 }
 #navbar-user-menu hr {
     border-bottom: 1px solid var(--border);
@@ -1096,6 +1140,17 @@ input, textarea {
     font-size: 22px;
     margin-right: 5px;
 }
+.message-gif-btn {
+    cursor: pointer;
+    vertical-align: sub;
+}
+.message-gif-btn:before {
+    content: "\f309";
+    font-family: var(--icon-font);
+    color: var(--link-color);
+    font-size: 22px;
+    margin-right: 5px;
+}
 #messages {
     cursor: pointer;
 }
@@ -1211,6 +1266,17 @@ input, textarea {
     color: var(--link-color);
     content: "\f033";
     font: 20px var(--icon-font);;
+}
+.navbar-new-tweet-gif-btn {
+    position: absolute;
+    right: 28px;
+    top: 0;
+    cursor: pointer;
+}
+.navbar-new-tweet-gif-btn:before {
+    color: var(--link-color);
+    content: "\f309";
+    font: 20px var(--icon-font);
 }
 .navbar-poll-question, .navbar-poll-date {
     border: 1px solid var(--border);
@@ -1352,7 +1418,7 @@ span.tweet-body-text {
 #user-name .emoji,
 #profile-name .emoji {
     width: 26px !important;
-    height: 26px !important;
+    height: 26px !important;  
 }
 
 .tweet-footer-favorites-img {
@@ -1800,7 +1866,9 @@ emoji-picker {
 .tweet-quote-cancel:hover,
 .tweet-reply-upload:hover,
 .tweet-reply-add-emoji:hover,
+.tweet-reply-add-gif:hover,
 .tweet-quote-add-emoji:hover,
+.tweet-quote-add-gif:hover,
 .tweet-quote-upload:hover {
     cursor: pointer;
     text-decoration: underline
@@ -1817,6 +1885,17 @@ emoji-picker {
     color: var(--link-color);
     content: "\f033";
     font: 20px var(--icon-font);;
+}
+.new-tweet-gif-btn {
+    position: absolute;
+    right: 28px;
+    top: 0;
+    cursor: pointer;
+}
+.new-tweet-gif-btn:before {
+    color: var(--link-color);
+    content: "\f309";
+    font: 20px var(--icon-font);
 }
 .new-tweet-mentions {
     float: right;
@@ -2032,6 +2111,17 @@ emoji-picker {
 }
 .tweet-interact-bookmark:before {
     content: "\f093";
+}
+.tweet-interact-download {
+    top: -4px !important;
+}
+.tweet-interact-download:before {
+    content: "\f186";
+    font-size: 14px !important;
+}
+.tweet-interact-download:hover:before,
+.tweet-interact-download:hover {
+    color: var(--link-color) !important;
 }
 .user-verified::after {
     content: "\f099";
@@ -2521,9 +2611,23 @@ video::-internal-media-controls-overlay-cast-button {
     .tweet-body {
         min-width: unset;
     }
-    #timeline {
+    #timeline,
+    #retweets,
+    #retweets_with_comments,
+    #likes,
+    .retweets,
+    .retweets_with_comments,
+    .likes {
         width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
         overflow-x: clip;
+    }
+    .cool-header {
+        display: block;
+        max-width: 100%;
+        padding: 0 10px;
+        overflow-wrap: anywhere;
     }
     #new-tweet-text {
         width: calc(100% - 88px);
@@ -2537,12 +2641,49 @@ video::-internal-media-controls-overlay-cast-button {
     }
     #new-tweet {
         border-radius: 0;
+        overflow-x: clip;
+    }
+    #new-tweet-media-cc,
+    .navbar-new-tweet-media-cc,
+    .new-tweet-media-cc {
+        display: block;
+        left: 0;
+        position: relative;
+        margin: 6px 0 4px 40px;
+        max-width: calc(100% - 48px);
+    }
+    #new-tweet-media-c,
+    .navbar-new-tweet-media-c,
+    .new-tweet-media-c {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        width: auto;
+        margin: 0;
+    }
+    #new-tweet-button,
+    .navbar-new-tweet-button,
+    .new-tweet-button {
+        float: right;
+        left: 0 !important;
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+        position: relative;
+    }
+    .new-tweet-media-img {
+        max-width: 64px;
+        max-height: 64px;
+    }
+    .tweet-media {
+        max-width: 100%;
     }
     .tweet-media-element {
         max-width: calc(100% - 15px);
     }
     .tweet-body-quote {
         width: calc(100% - 20px);
+        max-width: 100%;
+        box-sizing: border-box;
     }
     #right-cell {
         display: none;
@@ -2587,8 +2728,11 @@ video::-internal-media-controls-overlay-cast-button {
         padding-left: 0;
         padding-right: 0;
     }
-    .new-tweet-view, .new-tweet-container {
+    .modal .new-tweet-view, .new-tweet-container {
         width: 100%;
+    }
+    .modal .new-tweet-view {
+        overflow-x: clip;
     }
     .modal .new-tweet-text {
         width: calc(100% - 100px);
@@ -2718,6 +2862,7 @@ video::-internal-media-controls-overlay-cast-button {
     }
     .navbar-new-tweet {
         width: calc(100% - 10px);
+        overflow-x: clip;
     }
     .navbar-new-tweet-text {
         width: calc(100% - 98px);
@@ -2970,6 +3115,7 @@ video::-internal-media-controls-overlay-cast-button {
     #profile-name {
         width: 100%;
         margin-bottom: 5px;
+        overflow-wrap: anywhere;
     }
     #profile-nav-buttons {
         position: absolute;
@@ -3060,7 +3206,6 @@ video::-internal-media-controls-overlay-cast-button {
         width: 1000px;
         height: 1000px;
         left: 269px;
-        top: 51px;
         backdrop-filter: blur(5px);
         transition: 0.2s;
     }
@@ -3222,6 +3367,12 @@ video::-internal-media-controls-overlay-cast-button {
     .body-old-ui #navbar-user-menu-accounts:before {
         content: "\f056";
     }
+    #navbar-user-menu-newtwitter {
+        display: block;
+    }
+    #navbar-user-menu-newtwitter:before {
+        content: "\f179";
+    }
     #navbar-user-menu-links{
         display:flex;
         flex-direction:column;
@@ -3252,6 +3403,14 @@ video::-internal-media-controls-overlay-cast-button {
     }
     #navbar-user-menu-links>#navbar-user-menu-accounts{
         order: 10;
+    }
+    #navbar-user-menu-links>#navbar-user-menu-newtwitter{
+        order: 11;
+    }
+}
+@media screen and (max-width: 500px) {
+    #pin-likes {
+        display: none;
     }
 }
 @media screen and (max-width: 460px) {

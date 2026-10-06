@@ -922,11 +922,10 @@
     "notifications_error": { "message": "Δεν ήταν δυνατή η φόρτωση ορισμένων ειδοποιήσεων λόγω σφαλμάτων." },
     "tweet_error": { "message": "Δεν ήταν δυνατή η φόρτωση ορισμένων tweets λόγω σφαλμάτων." },
     "error_instructions": {
-        "message": "Αντιγράψτε το παρακάτω κείμενο και στείλτε το στο $AT1$Github$AT2$ ή $AT3$στο email μου$AT2$. Ευχαριστώ!",
+        "message": "Αντιγράψτε το παρακάτω κείμενο και στείλτε το στο $AT1$Github$AT2$. Ευχαριστώ!",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Εκκίνηση" },

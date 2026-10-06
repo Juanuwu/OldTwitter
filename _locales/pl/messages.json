@@ -346,11 +346,10 @@
     "notifications_error": { "message": "Nie załadowano niektórych powiadomień z powodu błędów." },
     "tweet_error": { "message": "Nie załadowano niektórych tweetów z powodu błędów." },
     "error_instructions": {
-        "message": "Skopiuj poniższy tekst i zgłoś go $AT1$na GitHubie$AT2$ lub wyślij $AT3$na mój email$AT2$. Dzięki!",
+        "message": "Skopiuj poniższy tekst i zgłoś go $AT1$na GitHubie$AT2$. Dzięki!",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Inicjalizacja" },

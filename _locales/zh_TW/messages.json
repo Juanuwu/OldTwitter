@@ -347,11 +347,10 @@
     "notifications_error": { "message": "因為某些問題導致無法載入部分通知。" },
     "tweet_error": { "message": "因為某些問題導致無法載入部分推文。" },
     "error_instructions": {
-        "message": "請複製以下文字然後傳到 $AT1$issue tracker$AT2$ 或 $AT3$我的信箱$AT2$。謝謝！",
+        "message": "請複製以下文字然後傳到 $AT1$issue tracker$AT2$。謝謝！",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "初始化中" },
@@ -395,6 +394,7 @@
     "copy_tweet_links_as": { "message": "複製推文連結時，將域名替換為", "example": "->Copy links as<- vxtwitter.com" },
     "use_new_icon": { "message": "在分頁圖示使用較新的 Logo（小藍鳥，不是 𝕏）" },
     "update_timeline_automatically": { "message": "自動更新時間軸" },
+    "keep_timeline_position": { "message": "在時間軸更新後保持在原來的位置"},
     "chrono_no_retweets": { "message": "經典時間軸（不含轉推）" },
     "chrono_retweets": { "message": "經典時間軸（僅含轉推）" },
     "hide_trends": { "message": "隱藏趨勢" },
@@ -647,5 +647,13 @@
     "suspended_user_desc": { "message": "你要查看的個人資料已被停用。 要返回首頁，請<a href=\"/home\">點一下這裡</a>。" },
     "show_boring_indicators": { "message": "在「跟隨中」及「粉絲」列表中顯示圖示，以表示各使用者的最後推文狀態（轉推、引用、一段時間前或沒有推文）。" },
     "hide_original_languages":{"message": "翻譯推文後隱藏原文" },
-    "blocked": {"message": "已封鎖"}
+    "blocked": {"message": "已封鎖"},
+    "use_retweeted_id": { "message": "在喜歡或轉推一個轉推後，通知轉推該貼文的用戶。" },
+    "show_based_in": { "message": "顯示帳號的所在地" },
+    "based_in": { "message": "帳戶所在地：" },
+    "based_in_vpn": { "message": "(VPN)" },
+    "new_gallery": { "message": "使用新式個人資料媒體頁" },
+    "popular_from_follows": { "message": "在你追蹤的用戶中流行的" },
+    "popular_from_follows_help": { "message": "這會顯示僅來自你追蹤的用戶的近期熱門推文。" },
+    "use_x_chat": { "message": "使用X Chat而非OldTwitter私訊。" }
 }

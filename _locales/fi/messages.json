@@ -346,11 +346,10 @@
     "notifications_error": { "message": "Joidenkin ilmoituksien lataaminen epäonnistui virheiden vuoksi." },
     "tweet_error": { "message": "Joidenkin twiittien lataaminen epäonnistui virheiden vuoksi." },
     "error_instructions": {
-        "message": "Ole kiltti ja kopioi teksti alhaalla ja lähetä se $AT1$ongelman seurantaan$AT2$ tai $AT3$minun sähköpostiini$AT2$. Kiitos!",
+        "message": "Ole kiltti ja kopioi teksti alhaalla ja lähetä se $AT1$ongelman seurantaan$AT2$. Kiitos!",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Alustetaan" },

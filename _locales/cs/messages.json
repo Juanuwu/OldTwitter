@@ -347,11 +347,10 @@
     "notifications_error": { "message": "Některé oznámení nemohla být načtena kvůli chybám." },
     "tweet_error": { "message": "Některé tweety nemohly být načteny kvůli chybám." },
     "error_instructions": {
-        "message": "Prosím zkopírujte text níže a pošlete ho na $AT1$Github$AT2$ nebo $AT3$můj email$AT2$. Děkuji!",
+        "message": "Prosím zkopírujte text níže a pošlete ho na $AT1$Github$AT2$. Děkuji!",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Inicializace" },

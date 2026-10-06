@@ -346,11 +346,10 @@
     "notifications_error": { "message": "Unele notificări nu au putut fi încărcate din cauza unor erori." },
     "tweet_error": { "message": "Unele tweet-uri nu au putut fi încărcate din cauza unor erori." },
     "error_instructions": {
-        "message": "Vă rugăm să copiați textul de mai jos și să îl trimiteți pe $AT1$issue tracker$AT2$ sau la $AT3$adresa mea de email$AT2$. Vă mulțumesc!",
+        "message": "Vă rugăm să copiați textul de mai jos și să îl trimiteți pe $AT1$issue tracker$AT2$. Vă mulțumesc!",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Inițializare" },

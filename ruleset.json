@@ -179,7 +179,7 @@
         "condition": {
             "urlFilter": "*://*.twimg.com/*",
             "initiatorDomains": ["x.com"],
-            "excludedInitiatorDomains": ["tweetdeck.x.com", "platform.x.com"],
+            "excludedInitiatorDomains": ["tweetdeck.x.com", "platform.x.com", "chat.x.com"],
             "resourceTypes": ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "xmlhttprequest", "other"]
         }
     },
@@ -199,6 +199,25 @@
         "condition": {
             "urlFilter": "*://*.twimg.com/*",
             "initiatorDomains": ["tweetdeck.x.com"],
+            "resourceTypes": ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "xmlhttprequest", "other"]
+        }
+    },
+    {
+        "id": 16,
+        "priority": 1,
+        "action": {
+            "type": "modifyHeaders",
+            "responseHeaders": [
+                {
+                    "header": "access-control-allow-origin",
+                    "operation": "set",
+                    "value": "https://chat.x.com"
+                }
+            ]
+        },
+        "condition": {
+            "urlFilter": "*://*.twimg.com/*",
+            "initiatorDomains": ["chat.x.com"],
             "resourceTypes": ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "xmlhttprequest", "other"]
         }
     }

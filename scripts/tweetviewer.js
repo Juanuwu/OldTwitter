@@ -208,6 +208,9 @@ class TweetViewer {
         if (!c) {
             tvl.hidden = false;
             document.getElementsByClassName("timeline")[0].innerHTML = "";
+            this.tweets = [];
+            this.seenReplies = [];
+            this.insertedMores = [];
         }
         let tl, tweetLikers;
         try {
@@ -299,7 +302,7 @@ class TweetViewer {
                     });
                 }
                 if (t.data.limited_actions !== "non_compliant")
-                    this.appendComposeComponent(tlContainer, t.data);
+                    await this.appendComposeComponent(tlContainer, t.data);
             }
             if (t.type === "tweet") {
                 await this.appendTweet(t.data, tlContainer, {
@@ -526,6 +529,7 @@ class TweetViewer {
         } catch (e) {
             console.error(e);
             tvl.hidden = true;
+            this.loadingNewTweets = false;
             this.container.getElementsByClassName(
                 "retweets_with_comments-more"
             )[0].innerText = LOC.load_more.message;
@@ -568,6 +572,7 @@ class TweetViewer {
             );
         }
         if (!this.retweetCommentsCursor || tweetRetweeters.length === 0) {
+            this.retweetCommentsCursor = undefined;
             this.container.getElementsByClassName(
                 "retweets_with_comments-more"
             )[0].hidden = true;
@@ -585,6 +590,7 @@ class TweetViewer {
         }
 
         tvl.hidden = true;
+        this.loadingNewTweets = false;
     }
     async appendComposeComponent(container, replyTweet) {
         if (!replyTweet) return;
@@ -621,6 +627,7 @@ class TweetViewer {
             ></textarea>
             <div class="new-tweet-user-search box" hidden></div>
             <div class="new-tweet-media-div" title="${LOC.add_media.message}">
+                <span class="new-tweet-gif-btn" title="${LOC.gif.message}"></span>
                 <span class="new-tweet-media"></span>
             </div>
             <div class="new-tweet-focused" hidden>
@@ -639,7 +646,11 @@ class TweetViewer {
                 </div>
                 <button
                     class="new-tweet-button nice-button"
-                    style="margin-right: -32px;"
+                    style="margin-right: ${
+                        typeof window !== "undefined" && window.innerWidth <= 590
+                            ? "0"
+                            : "-32px"
+                    };"
                 >
                     ${LOC.tweet.message}
                 </button>
@@ -698,7 +709,9 @@ class TweetViewer {
                 this.users[u.id_str] = u;
             }
             document.getElementsByClassName("new-tweet-button")[0].style =
-                "margin-right: -50px;";
+                window.innerWidth <= 590
+                    ? "margin-right: 0;"
+                    : "margin-right: -50px;";
             document
                 .getElementsByClassName("new-tweet-mentions")[0]
                 .addEventListener("click", async () => {
@@ -794,6 +807,8 @@ class TweetViewer {
         let mediaObserver = new MutationObserver(async () => {
             if (mediaList.children.length > 0) {
                 newTweetButton.style.marginRight = "4px";
+            } else if (window.innerWidth <= 590) {
+                newTweetButton.style.marginRight = "0";
             } else {
                 newTweetButton.style.marginRight =
                     mentions.length > 0 ? "-50px" : "-32px";
@@ -807,9 +822,29 @@ class TweetViewer {
                 handleDrop(e, this.mediaToUpload, mediaList);
             });
         document
-            .getElementsByClassName("new-tweet-media-div")[0]
-            .addEventListener("click", async () => {
+            .getElementsByClassName("new-tweet-media")[0]
+            .addEventListener("click", async (e) => {
+                e.stopPropagation();
                 getMedia(this.mediaToUpload, mediaList);
+            });
+        document
+            .getElementsByClassName("new-tweet-gif-btn")[0]
+            .addEventListener("click", (e) => {
+                e.stopPropagation();
+                document.getElementsByClassName("new-tweet-view")[0].click();
+                createGifPicker(this.mediaToUpload, mediaList);
+            });
+        document
+            .getElementsByClassName("new-tweet-media-div")[0]
+            .addEventListener("click", async (e) => {
+                if (
+                    e.target ===
+                    document.getElementsByClassName("new-tweet-media-div")[0]
+                ) {
+                    document
+                        .getElementsByClassName("new-tweet-media")[0]
+                        .click();
+                }
             });
         let newTweetUserSearch = document.getElementsByClassName(
             "new-tweet-user-search"
@@ -1439,7 +1474,7 @@ class TweetViewer {
             blockUserText = `${LOC.block_user.message} @${t.user.screen_name}`;
             unblockUserText = `${LOC.unblock_user.message} @${t.user.screen_name}`;
         }
-        if (t.in_reply_to_screen_name && t.display_text_range) {
+        if (t.in_reply_to_screen_name && t.display_text_range && t.entities.user_mentions) {
             t.entities.user_mentions.forEach((user_mention) => {
                 if (user_mention.indices[0] < t.display_text_range[0]) {
                     mentionedUserText += `<a href="/${user_mention.screen_name}">@${user_mention.screen_name}</a> `;
@@ -1450,7 +1485,8 @@ class TweetViewer {
         if (
             t.quoted_status &&
             t.quoted_status.in_reply_to_screen_name &&
-            t.display_text_range
+            t.display_text_range &&
+            t.quoted_status.entities.user_mentions
         ) {
             t.quoted_status.entities.user_mentions.forEach((user_mention) => {
                 if (user_mention.indices[0] < t.display_text_range[0]) {
@@ -1830,11 +1866,11 @@ class TweetViewer {
                                                                         !vars.disableDataSaver
                                                                       ? "?name=small"
                                                                       : "")
-                                                                : m.video_info.variants.find(
-                                                                      (v) =>
-                                                                          v.content_type ===
-                                                                          "video/mp4"
-                                                                  ).url
+                                                                : getPreferredVideoUrl(
+                                                                      m
+                                                                          .video_info
+                                                                          .variants
+                                                                  )
                                                         }" class="tweet-media-element tweet-media-element-quote ${
                                                             m.type ===
                                                             "animated_gif"
@@ -2097,7 +2133,7 @@ class TweetViewer {
                     typeof t.bookmark_count !== "undefined"
                         ? html`<span
                               title="${LOC.bookmarks_count.message}"
-                              class="tweet-interact-bookmark${t.bookmarked
+                              class="tweet-button tweet-interact-bookmark${t.bookmarked
                                   ? " tweet-interact-bookmarked"
                                   : ""}"
                               data-val="${t.bookmark_count}"
@@ -2121,6 +2157,15 @@ class TweetViewer {
                                   t.ext.views.r.ok.count
                               ).replace(/\s/g, ",")}</span
                           >`
+                        : ""}
+                    ${vars.showDownloadButton &&
+                    t.extended_entities &&
+                    t.extended_entities.media &&
+                    t.extended_entities.media.length > 0
+                        ? html`<span
+                              title="${LOC.download_media.message}"
+                              class="tweet-button tweet-interact-download"
+                          ></span>`
                         : ""}
                     <span class="tweet-button tweet-interact-more"></span>
                     <div class="tweet-interact-more-menu dropdown-menu" hidden>
@@ -2258,7 +2303,7 @@ class TweetViewer {
                                   .join("\n")
                             : ""}
                         ${t.extended_entities &&
-                        t.extended_entities.media.length === 1
+                        t.extended_entities.media.length > 0
                             ? `<span class="tweet-interact-more-menu-download">${LOC.download_media.message}</span>`
                             : ``}
                         ${vars.developerMode
@@ -2288,6 +2333,9 @@ class TweetViewer {
                             ${!vars.disableHotkeys ? 'title="ALT+M"' : ""}
                             class="tweet-reply-upload"
                             >${LOC.upload_media_btn.message}</span
+                        >
+                        <span class="tweet-reply-add-gif"
+                            >${LOC.gif_btn.message}</span
                         >
                         <span class="tweet-reply-add-emoji"
                             >${LOC.emoji_btn.message}</span
@@ -2329,6 +2377,9 @@ class TweetViewer {
                             ${!vars.disableHotkeys ? 'title="ALT+M"' : ""}
                             class="tweet-quote-upload"
                             >${LOC.upload_media_btn.message}</span
+                        >
+                        <span class="tweet-quote-add-gif"
+                            >${LOC.gif_btn.message}</span
                         >
                         <span class="tweet-quote-add-emoji"
                             >${LOC.emoji_btn.message}</span
@@ -2815,6 +2866,9 @@ class TweetViewer {
             tweet.getElementsByClassName("tweet-reply-cancel")[0];
         const tweetReplyUpload =
             tweet.getElementsByClassName("tweet-reply-upload")[0];
+        const tweetReplyAddGif = tweet.getElementsByClassName(
+            "tweet-reply-add-gif"
+        )[0];
         const tweetReplyAddEmoji = tweet.getElementsByClassName(
             "tweet-reply-add-emoji"
         )[0];
@@ -2843,6 +2897,9 @@ class TweetViewer {
         const tweetInteractBookmark = tweet.getElementsByClassName(
             "tweet-interact-bookmark"
         )[0];
+        const tweetInteractDownload = tweet.getElementsByClassName(
+            "tweet-interact-download"
+        )[0];
         const tweetInteractMore = tweet.getElementsByClassName(
             "tweet-interact-more"
         )[0];
@@ -2863,6 +2920,9 @@ class TweetViewer {
             tweet.getElementsByClassName("tweet-quote-cancel")[0];
         const tweetQuoteUpload =
             tweet.getElementsByClassName("tweet-quote-upload")[0];
+        const tweetQuoteAddGif = tweet.getElementsByClassName(
+            "tweet-quote-add-gif"
+        )[0];
         const tweetQuoteAddEmoji = tweet.getElementsByClassName(
             "tweet-quote-add-emoji"
         )[0];
@@ -3069,7 +3129,6 @@ class TweetViewer {
                                         "nice-button"
                                     )[0].innerText = LOC.remove.message;
                                 }
-                                l.is_member = !l.is_member;
                             });
                     }
                 }
@@ -3153,8 +3212,9 @@ class TweetViewer {
 
         // Quote body
         if (tweetBodyQuote) {
-            tweetBodyQuote.addEventListener("click", (e) => {
+            tweetBodyQuote.addEventListener("click", async (e) => {
                 e.preventDefault();
+                this.savePageData();
                 history.pushState(
                     {},
                     null,
@@ -3167,8 +3227,9 @@ class TweetViewer {
                 this.cursor = undefined;
                 this.seenReplies = [];
                 this.mainTweetLikers = [];
+                let restored = await this.restorePageData();
                 let id = location.pathname.match(/status\/(\d{1,32})/)[1];
-                if (this.subpage === "tweet") {
+                if (this.subpage === "tweet" && !restored) {
                     this.updateReplies(id);
                 } else if (this.subpage === "likes") {
                     this.updateLikes(id);
@@ -3424,21 +3485,10 @@ class TweetViewer {
                     );
                 }
                 if (e.target.tagName === "IMG") {
-                    if (
-                        !e.target.src.includes("?name=") &&
-                        !e.target.src.endsWith(":orig") &&
-                        !e.target.src.startsWith("data:")
-                    ) {
-                        e.target.src += "?name=orig";
-                    } else if (e.target.src.includes("?name=small")) {
-                        e.target.src = e.target.src.replace(
-                            "?name=small",
-                            "?name=large"
-                        );
-                    }
                     new Viewer(tweetMedia, {
                         transition: false,
                         zoomRatio: 0.3,
+                        url: getOriginalImageUrl,
                     });
                     e.target.click();
                 }
@@ -3480,6 +3530,9 @@ class TweetViewer {
         });
         tweetReplyUpload.addEventListener("click", () => {
             getMedia(replyMedia, tweetReplyMedia);
+        });
+        tweetReplyAddGif.addEventListener("click", () => {
+            createGifPicker(replyMedia, tweetReplyMedia);
         });
         tweetInteractReply.addEventListener("click", () => {
             if (options.mainTweet) {
@@ -3887,6 +3940,9 @@ class TweetViewer {
         });
         tweetQuoteUpload.addEventListener("click", () => {
             getMedia(quoteMedia, tweetQuoteMedia);
+        });
+        tweetQuoteAddGif.addEventListener("click", () => {
+            createGifPicker(quoteMedia, tweetQuoteMedia);
         });
         tweetQuoteText.addEventListener("keydown", (e) => {
             if (e.key === "Enter" && e.ctrlKey) {
@@ -4522,15 +4578,24 @@ class TweetViewer {
             );
         });
         let downloading = false;
-        if (t.extended_entities && t.extended_entities.media.length === 1) {
-            tweetInteractMoreMenuDownload.addEventListener("click", () => {
-                if (downloading) return;
-                downloading = true;
-                let media = t.extended_entities.media[0];
+        const downloadMedia = () => {
+            if (downloading) return;
+            if (
+                !t.extended_entities ||
+                !t.extended_entities.media ||
+                t.extended_entities.media.length === 0
+            )
+                return;
+            downloading = true;
+            t.extended_entities.media.forEach((item, index) => {
                 let url =
-                    media.type === "photo"
-                        ? media.media_url_https
-                        : media.video_info.variants[0].url;
+                    item.type === "photo"
+                        ? item.media_url_https
+                        : item.video_info.variants[0].url;
+                url = new URL(url);
+                if (item.type === "photo") {
+                    url.searchParams.set("name", "orig");
+                }
                 _fetch(url)
                     .then((res) => res.blob())
                     .then((blob) => {
@@ -4541,9 +4606,11 @@ class TweetViewer {
                         let ts = new Date(t.created_at)
                             .toISOString()
                             .split("T")[0];
-                        let extension = url.split(".").pop();
-                        //let _index = t.extended_entities.media.length > 1 ? "_"+(index+1) : "";
-                        let _index = "";
+                        let extension = url.pathname.split(".").pop();
+                        let _index =
+                            t.extended_entities.media.length > 1
+                                ? "_" + (index + 1)
+                                : "";
                         let filename = `${t.user.screen_name}_${ts}_${t.id_str}${_index}.${extension}`;
                         let filename_template = vars.customDownloadTemplate;
 
@@ -4556,6 +4623,10 @@ class TweetViewer {
                                 timestamp: ts,
                                 id: t.id_str,
                                 index: _index,
+                                filename: url.pathname.substring(
+                                    url.pathname.lastIndexOf("/") + 1,
+                                    url.pathname.lastIndexOf(".")
+                                ),
                             };
                             filename = filename_template.replace(
                                 /\{([\w]+)\}/g,
@@ -4572,6 +4643,15 @@ class TweetViewer {
                         console.error(e);
                     });
             });
+        };
+        if (t.extended_entities && t.extended_entities.media.length > 0) {
+            if (tweetInteractMoreMenuDownload)
+                tweetInteractMoreMenuDownload.addEventListener(
+                    "click",
+                    downloadMedia
+                );
+            if (tweetInteractDownload)
+                tweetInteractDownload.addEventListener("click", downloadMedia);
         }
         if (
             t.extended_entities &&
@@ -4715,6 +4795,18 @@ class TweetViewer {
                 !this.moreBtn.hidden
             ) {
                 this.moreBtn.click();
+            } else if (that.subpage === "retweets_with_comments") {
+                let quotesMore = this.container.getElementsByClassName(
+                    "retweets_with_comments-more"
+                )[0];
+                if (
+                    quotesMore &&
+                    !quotesMore.hidden &&
+                    that.retweetCommentsCursor
+                ) {
+                    that.loadingNewTweets = true;
+                    quotesMore.click();
+                }
             }
         }
     }

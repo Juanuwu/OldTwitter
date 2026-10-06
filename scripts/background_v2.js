@@ -73,7 +73,9 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
         )
             details.requestHeaders.push({
                 name: "Origin",
-                value: "https://x.com",
+                value: details.originUrl
+                    ? new URL(details.originUrl).origin
+                    : "https://x.com",
             });
         return {
             requestHeaders: details.requestHeaders,
@@ -93,6 +95,25 @@ chrome.webRequest.onHeadersReceived.addListener(
     },
     {
         urls: ["*://*.twitter.com/*", "*://twitter.com/*", "*://*.x.com/*", "*://x.com/*"],
+    },
+    ["blocking", "responseHeaders"]
+);
+chrome.webRequest.onHeadersReceived.addListener(
+    function (details) {
+        const origin = new URL(
+            details.originUrl || details.url || "https://x.com"
+        ).origin;
+        const responseHeaders = details.responseHeaders.filter(
+            (h) => h.name.toLowerCase() !== "access-control-allow-origin"
+        );
+        responseHeaders.push({
+            name: "access-control-allow-origin",
+            value: origin,
+        });
+        return { responseHeaders };
+    },
+    {
+        urls: ["*://*.twimg.com/*", "*://twimg.com/*"],
     },
     ["blocking", "responseHeaders"]
 );
@@ -140,7 +161,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
     },
     ["blocking", "requestHeaders"]
 );
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "inject") {
         console.log(request, sender.tab.id);
         chrome.scripting
@@ -158,5 +179,27 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             .catch((e) => {
                 console.log("error injecting", e);
             });
+        return;
+    }
+    if (request.action === "fetchBlob") {
+        fetch(request.url)
+            .then(async (res) => {
+                if (!res.ok) throw new Error(res.status + " " + res.statusText);
+                let buf = await res.arrayBuffer();
+                let bytes = new Uint8Array(buf);
+                let binary = "";
+                for (let i = 0; i < bytes.length; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                sendResponse({
+                    ok: true,
+                    type: res.headers.get("content-type") || "image/gif",
+                    data: btoa(binary),
+                });
+            })
+            .catch((e) => {
+                sendResponse({ ok: false, error: String(e) });
+            });
+        return true;
     }
 });

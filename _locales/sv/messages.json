@@ -346,11 +346,10 @@
     "notifications_error": { "message": "Ett par notiser kunde inte laddas. Försök igen." },
     "tweet_error": { "message": "Några Tweets kunde inte laddas. Försök igen." },
     "error_instructions": {
-        "message": "Sker det igen så kan du kopiera detta och sedan skicka det till våran $AT1$bug tracker$AT2$ eller så kan du $AT3$ett mejl$AT2$. Håll det på engelska dock. Tack!",
+        "message": "Sker det igen så kan du kopiera detta och sedan skicka det till våran $AT1$bug tracker$AT2$. Håll det på engelska dock. Tack!",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Förbereder" },

@@ -171,6 +171,7 @@ Greek - [VasilisTheChu](https://pikachu.systems/)
 Romanian - [Skyrina](https://skyrina.dev/), [AlexSem](https://twitter.com/AlexSem5399)  
 Tagalog - [Eurasian](https://twitter.com/NotPROxV), [@conc1erge](https://twitter.com/conc1erge), [@cheesee_its](https://twitter.com/cheesee_its)  
 Latvian - [sophie](https://sad.ovh/)  
+Serbian - [asvira](https://x.com/itkilledmetoo)  
 Hebrew - "ugh", qqqq, [kriterin](https://twitter.com/kriterin)  
 Nepali - [DimeDead](https://dimedead.neocities.org/)  
 Dutch - Puka1611  
@@ -190,4 +191,4 @@ Catalan - [elmees21](https://twitter.com/elmees21), [Luna](https://twitter.com/c
 Swedish - [actuallyaridan](https://twitter.com/actuallyaridan)  
 Bulgarian - [saraaa7447](https://twitter.com/saraaa7447)  
 Norwegian - [twistquest](https://twitter.com/twistquest)  
-Indonesian - [lorizade](https://twitter.com/lorizade), [Feerse_](https://twitter.com/Feerse_), [DaGamerFiles](https://twitter.com/DaGamerFiles), [KuchingNeko](https://twitter.com/KuchingNeko)  
+Indonesian - [lorizade](https://twitter.com/lorizade), [Feerse_](https://twitter.com/Feerse_), [DaGamerFiles](https://twitter.com/DaGamerFiles), [KuchingNeko](https://twitter.com/KuchingNeko)

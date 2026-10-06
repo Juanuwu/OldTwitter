@@ -16,6 +16,40 @@
         }
 
         let initError = false, solver;
+        let solveChain = Promise.resolve();
+
+        async function waitForSolver() {
+            if (solver || initError) return;
+            const waits = [50, 100, 500, 1000, 2500, 3000];
+            for (const ms of waits) {
+                await sleep(ms);
+                if (solver || initError) return;
+            }
+        }
+
+        async function runSolve(event, data) {
+            if (initError) {
+                console.error('Initialization error');
+                event.source.postMessage({ action: 'error', error: 'Initialization error', id: data.id }, event.origin);
+                return;
+            }
+            if (!solver) {
+                await waitForSolver();
+                if (initError || !solver) {
+                    console.error('Solver not initialized');
+                    event.source.postMessage({ action: 'error', error: 'Solver timed out', id: data.id }, event.origin);
+                    return;
+                }
+            }
+            try {
+                let result = await solver(data.path, data.method);
+                event.source.postMessage({ action: 'solved', result, id: data.id }, event.origin);
+            } catch (e) {
+                console.error('Solver error:', e);
+                event.source.postMessage({ action: 'error', error: `${e.message}\n${e.stack}`, id: data.id }, event.origin);
+            }
+        }
+
         window.addEventListener('message', async function (event) {
             if (event.origin !== 'https://twitter.com' && event.origin !== 'https://x.com') {
                 return;
@@ -33,6 +67,7 @@
                     eval(vendorData);
 
                     let animsDiv = document.getElementById('anims');
+                    animsDiv.innerHTML = '';
                     for (let anim of data.anims) {
                         animsDiv.innerHTML += `\n${anim}`;
                     }
@@ -46,24 +81,42 @@
                         return;
                     }
                     const id = idMatch[1];
-                    const defaultMatch = challengeData.match(/default:\(\)=>(\w+)\}\)/);
-                    if (!defaultMatch) {
+
+                    const assignMatch = challengeData.match(/(\w+\s*\.\s*default\s*=\s*)\(\s*\)\s*=>/);
+                    const propMatch = challengeData.match(/default:\(\)=>(\w+)\}\)/);
+                    const arrayMatch = challengeData.match(/\.d\([\w$]+,\["default",(\d+),([\w$]+)[,\]]/);
+                    if (!assignMatch && !propMatch && !arrayMatch) {
                         console.error('Default export not found');
                         event.source.postMessage({ action: 'initError', error: 'Default export not found' }, event.origin);
                         initError = true;
                         return;
                     }
-                    const defaultVar = defaultMatch[1];
+
                     // TO EXTENSION REVIEWERS (mostly Mozilla):
                     // This script is part of Twitter's security challenge, before mindlessly rejecting extension actually review what code does please! It's in sandbox for a reason.
                     // It only ever executes code from trusted Twitter domain, abs.twimg.com (specifically their script that generates security headers)
                     // It's impossible to have it contained in extension itself, since it's generated dynamically
                     // you can see where script is loaded in scripts/twchallenge.js
                     // it also can't use any extension APIs, since it's contained in object url iframe
-                    const patchedChallengeData = challengeData.replace(
-                        `default:()=>${defaultVar}`,
-                        `default:(window._CHALLENGE=()=>${defaultVar})`
-                    );
+                    let patchedChallengeData;
+                    if (assignMatch) {
+                        patchedChallengeData = challengeData.replace(
+                            assignMatch[0],
+                            `${assignMatch[1]}window.__CHALLENGE_FN__=()=>`
+                        );
+                    } else if (propMatch) {
+                        const defaultVar = propMatch[1];
+                        patchedChallengeData = challengeData.replace(
+                            `default:()=>${defaultVar}`,
+                            `default:(window._CHALLENGE=()=>${defaultVar})`
+                        );
+                    } else {
+                        const [, flag, defaultVar] = arrayMatch;
+                        patchedChallengeData = challengeData.replace(
+                            `["default",${flag},${defaultVar}`,
+                            `["default",${flag},(window._CHALLENGE=()=>${defaultVar},${defaultVar})`
+                        );
+                    }
                     eval(patchedChallengeData);
 
                     // 1) Collect all module factories that have already been pushed
@@ -92,6 +145,14 @@
                     }
 
                     wreq.d = (exports, definition) => {
+                        if (Array.isArray(definition)) {
+                            // newer webpack: flat [name, flag, value, ...] list
+                            for (let i = 0; i < definition.length; i += 3) {
+                                const [key, flag, value] = definition.slice(i, i + 3);
+                                Object.defineProperty(exports, key, { enumerable: true, get: flag && typeof value === "function" ? value : () => value });
+                            }
+                            return;
+                        }
                         for (const key in definition) {
                             Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
                         }
@@ -108,7 +169,17 @@
                         return getter;
                     };
                     wreq.o = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
+                    wreq.dn = (fn) => {
+                        try {
+                            if (typeof fn === "function" && !fn.name) Object.defineProperty(fn, "name", { value: "default", configurable: true });
+                        } catch {}
+                        return fn;
+                    };
                     webpackChunk_twitter_responsive_web[1][1][id](chunks, cache, wreq);
+
+                    if (window.__CHALLENGE_FN__) {
+                        window._CHALLENGE = () => window.__CHALLENGE_FN__;
+                    }
                     solver = window._CHALLENGE()();
                     event.source.postMessage({ action: 'ready' }, event.origin);
                 } catch (e) {
@@ -117,38 +188,7 @@
                     initError = true;
                 }
             } else if (data.action === 'solve') {
-                if (initError) {
-                    console.error('Initialization error');
-                    event.source.postMessage({ action: 'error', error: 'Initialization error', id: data.id }, event.origin);
-                    return;
-                }
-                if (!solver) {
-                    await sleep(50);
-                    if (!solver) {
-                        await sleep(100);
-                    }
-                    if (!solver) {
-                        await sleep(500);
-                    }
-                    if (!solver) {
-                        await sleep(1000);
-                    }
-                    if (!solver) {
-                        await sleep(2500);
-                    }
-                    if (initError || !solver) {
-                        console.error('Solver not initialized');
-                        event.source.postMessage({ action: 'error', error: 'Solver timed out', id: data.id }, event.origin);
-                        return;
-                    }
-                }
-                try {
-                    let result = await solver(data.path, data.method);
-                    event.source.postMessage({ action: 'solved', result, id: data.id }, event.origin);
-                } catch (e) {
-                    console.error('Solver error:', e);
-                    event.source.postMessage({ action: 'error', error: `${e.message}\n${e.stack}`, id: data.id }, event.origin);
-                }
+                solveChain = solveChain.then(() => runSolve(event, data), () => runSolve(event, data));
             }
         });
     </script>

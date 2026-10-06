@@ -81,11 +81,10 @@ setTimeout(() => {
                     <h2 style="margin:0;margin-bottom:10px;color:var(--darker-gray);font-weight:300">(OldTwitter) ${LOC.new_version.message} - ${chrome.runtime.getManifest().version}</h2>
                     <span id="changelog" style="font-size:14px;color:var(--default-text-color)">
                         <ul>
-                            <li>Fixed lists not loading.</li>
-                            <li>Fixed X Chat not working on Firefox.</li>
-                            <li>Fixed pressing on Message button on profile page not opening correct chat.</li>
-                            <li>Fixed articles not loading when OldTwitter is enabled.</li>
-                            <li>Some style fixes for X Chat.</li>
+                            <li>Added a setting to block Grok from editing your images (enabled by default).</li>
+                            <li>Added a setting to show download button on tweets with media.</li>
+                            <li>Added a setting to pin the Likes link on the navbar.</li>
+                            <li>Fixed quotes page being broken on mobile and added auto-loading.</li>
                         </ul>
                     </span>
                 `, 'changelog-modal', () => {}, () => Date.now() - opened > 1250);
@@ -655,12 +654,28 @@ setTimeout(async () => {
             pollToUpload = undefined;
         }
     });
-    document.getElementById('new-tweet-media-div').addEventListener('click', () => {
+    document.getElementById('new-tweet-media').addEventListener('click', (e) => {
+        e.stopPropagation();
         document.getElementById('new-tweet-poll').innerHTML = '';
         document.getElementById('new-tweet-poll').hidden = true;
         document.getElementById('new-tweet-poll').style.width = '0';
         pollToUpload = undefined;
         getMedia(mediaToUpload, tweetMediaList);
+    });
+    document.getElementById('new-tweet-gif-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('new-tweet').click();
+        document.getElementById('new-tweet-poll').innerHTML = '';
+        document.getElementById('new-tweet-poll').hidden = true;
+        document.getElementById('new-tweet-poll').style.width = '0';
+        pollToUpload = undefined;
+        createGifPicker(mediaToUpload, tweetMediaList);
+    });
+    // keep clicks on the media area from bubbling oddly when focused
+    document.getElementById('new-tweet-media-div').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('new-tweet-media-div')) {
+            document.getElementById('new-tweet-media').click();
+        }
     });
     let selectedIndex = 0;
     newTweetText.addEventListener('focus', async e => {

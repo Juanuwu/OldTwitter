@@ -1,7 +1,7 @@
 {
   "name": "Old Twitter Layout (2026)",
   "description": "__MSG_ext_description__",
-  "version": "1.9.6.5",
+  "version": "1.9.8.2",
   "manifest_version": 3,
   "homepage_url": "https://github.com/dimdenGD/OldTwitter",
   "background": {
@@ -21,7 +21,9 @@
     "*://twimg.com/*",
     "*://*.twimg.com/*",
     "*://x.com/*",
-    "*://*.x.com/*"
+    "*://*.x.com/*",
+    "*://*.giphy.com/*",
+    "*://*.tenor.com/*"
   ],
   "sandbox": {
     "pages": ["sandbox.html"]

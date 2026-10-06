@@ -346,11 +346,10 @@
     "notifications_error": { "message": "Noen varsler kunne ikke lastes inn pga. en feil." },
     "tweet_error": { "message": "Noen tweets kunne ikke lastes inn pga. feil." },
     "error_instructions": {
-        "message": "Vær så snill kopier denne teksten og send den til $AT1$problemsporeren$AT2$ eller $AT3$min epost$AT2$. Takk!",
+        "message": "Vær så snill kopier denne teksten og send den til $AT1$problemsporeren$AT2$. Takk!",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Initialisering" },

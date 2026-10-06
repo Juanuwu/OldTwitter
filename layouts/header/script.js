@@ -457,8 +457,11 @@ let userDataFunction = async user => {
     document.getElementById('pin-profile').hidden = !vars.pinProfileOnNavbar;
     document.getElementById('pin-bookmarks').hidden = !vars.pinBookmarksOnNavbar;
     document.getElementById('pin-lists').hidden = !vars.pinListsOnNavbar;
+    document.getElementById('pin-likes').hidden = !vars.pinLikesOnNavbar;
     document.getElementById('pin-profile').href = `/${user.screen_name}`;
     document.getElementById('pin-lists').href = `/${user.screen_name}/lists`;
+    document.getElementById('pin-likes').href = `/${user.screen_name}/likes`;
+    document.querySelector('#pin-likes .nav-text').innerText = vars.heartsNotStars ? LOC.likes.message : LOC.favorites.message;
 
     if(vars.enableTwemoji) twemoji.parse(menuUserName);
 
@@ -976,12 +979,10 @@ let userDataFunction = async user => {
                         photoElement.width = w;
                         photoElement.height = h;
                         photoElement.addEventListener('click', e => {
-                            if(e.target.src.includes(':small')) {
-                                e.target.src = e.target.src.replace(':small', '');
-                            };
                             new Viewer(photoElement, {
                                 transition: false,
-                        zoomRatio: 0.3
+                                zoomRatio: 0.3,
+                                url: getOriginalImageUrl,
                             });
                             e.target.click();
                         })
@@ -1398,7 +1399,7 @@ let userDataFunction = async user => {
             modal = createModal(html`
                 <div class="inbox" style="height: 100%;">
                     <div class="xchat" style="height: 100%;">
-                        <iframe id="xchat-iframe" src="https://x.com/i/chat?newtwitter=true&if=1" style="width: 100%; height: 100%; border: none;"></iframe>
+                        <iframe id="xchat-iframe" src="https://chat.x.com" style="width: 100%; height: 100%; border: none;"></iframe>
                     </div>
                 </div>
             `, "inbox-modal", () => {
@@ -1452,6 +1453,7 @@ let userDataFunction = async user => {
                     <div class="message-new">
                         <div class="message-new-media"></div>
                         <span class="message-new-media-btn"></span>
+                        <span class="message-gif-btn" title="${LOC.gif.message}"></span>
                         <span class="message-emoji-btn"></span>
                         <textarea type="text" class="message-new-input" placeholder="${LOC.type_message.message}"></textarea>
                         <button class="nice-button message-new-send">${LOC.send.message}</button>
@@ -1486,6 +1488,7 @@ let userDataFunction = async user => {
         const newMediaButton = modal.querySelector('.message-new-media-btn');
         const newMediaInput = modal.querySelector('.message-new-input');
         const emojiButton = modal.querySelector('.message-emoji-btn');
+        const gifButton = modal.querySelector('.message-gif-btn');
         const newSend = modal.querySelector('.message-new-send');
         const newInput = modal.querySelector('.message-new-input');
         const loadMore = modal.querySelector('.load-more');
@@ -1646,6 +1649,9 @@ let userDataFunction = async user => {
                 top: rect.y-300 + 'px'
             });
         });
+        gifButton.addEventListener('click', () => {
+            createGifPicker(mediaToUpload, newMedia, true);
+        });
         
         loadMore.addEventListener('click', async () => {
             let moreInbox = await API.inbox.get(cursor);
@@ -1786,6 +1792,7 @@ let userDataFunction = async user => {
                     <textarea maxlength="25000" class="navbar-new-tweet-text" placeholder="${LOC.whats_happening.message}"></textarea>
                     <div class="navbar-new-tweet-user-search box" hidden></div>
                     <div class="navbar-new-tweet-media-div">
+                        <span class="navbar-new-tweet-gif-btn" title="${LOC.gif.message}"></span>
                         <span class="navbar-new-tweet-media"></span>
                     </div>
                     <div class="navbar-new-tweet-focused">
@@ -1803,6 +1810,7 @@ let userDataFunction = async user => {
         const newTweetText = modal.getElementsByClassName('navbar-new-tweet-text')[0];
         const newTweetChar = modal.getElementsByClassName('navbar-new-tweet-char')[0];
         const newTweetMedia = modal.getElementsByClassName('navbar-new-tweet-media')[0];
+        const newTweetGifBtn = modal.getElementsByClassName('navbar-new-tweet-gif-btn')[0];
         const newTweetMediaDiv = modal.getElementsByClassName('navbar-new-tweet-media-c')[0];
         const newTweetButton = modal.getElementsByClassName('navbar-new-tweet-button')[0];
         const newTweetUserSearch = modal.getElementsByClassName('navbar-new-tweet-user-search')[0];
@@ -2009,6 +2017,15 @@ let userDataFunction = async user => {
             newTweetPoll.style.width = "0";
             pollToUpload = undefined;
             getMedia(mediaToUpload, newTweetMediaDiv);
+            newTweetText.focus();
+        });
+        newTweetGifBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            newTweetPoll.innerHTML = '';
+            newTweetPoll.hidden = true;
+            newTweetPoll.style.width = "0";
+            pollToUpload = undefined;
+            createGifPicker(mediaToUpload, newTweetMediaDiv);
             newTweetText.focus();
         });
         newTweetButton.addEventListener('click', async () => {
@@ -2536,10 +2553,27 @@ let userDataFunction = async user => {
                 if(!url.href.startsWith('/')) url.target = "_blank";
                 additionalInfoElement.prepend(url);
             }
+            if(vars.showBasedIn) {
+                API.user.getAbout(user.screen_name).then(about => {
+                    if(stopLoad || !about?.account_based_in || !userPreview.isConnected) return;
+                    if(additionalInfoElement.querySelector('.profile-additional-based-in')) return;
+                    let country = about.account_based_in;
+                    let flag = getCountryFlag(country);
+                    let countryDisplay = flag ? `${flag} ${country}` : country;
+                    if(!about.location_accurate) countryDisplay += ` ${LOC.based_in_vpn.message}`;
+                    let basedIn = document.createElement('span');
+                    basedIn.classList.add('profile-additional-thing', 'profile-additional-based-in');
+                    basedIn.innerText = `${LOC.based_in.message} ${countryDisplay}`;
+                    let joined = additionalInfoElement.querySelector('.profile-additional-joined');
+                    if(joined) additionalInfoElement.insertBefore(basedIn, joined);
+                    else additionalInfoElement.appendChild(basedIn);
+                    if(vars.enableTwemoji) twemoji.parse(basedIn);
+                }).catch(() => {});
+            }
             div.addEventListener('mouseleave', leaveFunction);
             let links = Array.from(div.querySelector('.preview-user-description').querySelectorAll('a'));
             links.forEach(link => {
-                let realLink = user.entities.description.urls.find(u => u.url === link.href);
+                let realLink = user.entities.description?.urls?.find(u => u.url === link.href);
                 if (realLink) {
                     link.href = realLink.expanded_url;
                     if(!link.href.startsWith('/')) link.target = '_blank';
@@ -3100,23 +3134,24 @@ setInterval(() => {
         }
         let about_left = document.getElementById('about-left');
         let about_right = document.getElementById('about-right');
+        let menuNewTwitter = document.getElementById('navbar-user-menu-newtwitter');
+        function getNewTwitterHref() {
+            let hrefUrl = new URL(location.href);
+            hrefUrl.searchParams.set('newtwitter', 'true');
+            return hrefUrl.toString();
+        }
+        if(menuNewTwitter) {
+            menuNewTwitter.href = getNewTwitterHref();
+            menuNewTwitter.addEventListener('click', e => {
+                e.stopImmediatePropagation();
+            });
+        }
         if(about_left && about_right && !location.pathname.startsWith('/old/') && !location.pathname.startsWith('/i/timeline')) {
             let a = document.createElement('a');
             let a2 = document.createElement('a');
-            let hrefUrl = new URL(location.href);
-            let searchParams = new URLSearchParams(hrefUrl.search);
-            searchParams.set('newtwitter', 'true');
-            hrefUrl.search = searchParams.toString();
-            a.href = hrefUrl.toString();
-            a2.href = hrefUrl.toString();
-            setInterval(() => {
-                let hrefUrl = new URL(location.href);
-                let searchParams = new URLSearchParams(hrefUrl.search);
-                searchParams.set('newtwitter', 'true');
-                hrefUrl.search = searchParams.toString();
-                a.href = hrefUrl.toString();
-                a2.href = hrefUrl.toString();
-            }, 500);
+            let href = getNewTwitterHref();
+            a.href = href;
+            a2.href = href;
             a.className = "open-new-twitter";
             a.innerText = `[${LOC.open_newtwitter.message}]`;
             a.addEventListener('click', e => {
@@ -3129,6 +3164,16 @@ setInterval(() => {
             });
             about_left.appendChild(a);
             about_right.appendChild(a2);
+            setInterval(() => {
+                let href = getNewTwitterHref();
+                a.href = href;
+                a2.href = href;
+                if(menuNewTwitter) menuNewTwitter.href = href;
+            }, 500);
+        } else if(menuNewTwitter) {
+            setInterval(() => {
+                menuNewTwitter.href = getNewTwitterHref();
+            }, 500);
         }
         if(Math.random() > 0.99) {
             document.getElementById('donate-button').innerHTML += ' <span style="vertical-align: middle;">🥺</span>';

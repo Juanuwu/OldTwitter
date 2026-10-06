@@ -1003,11 +1003,10 @@
     "notifications_error": { "message": "Dažas notifikācijas nevarēja būt ielādētas." },
     "tweet_error": { "message": "Daži twīti nevarēja būt ielādēti." },
     "error_instructions": {
-        "message": "Kopē tekstu zem un sūti to uz $AT1$problēmu sekotāju$AT2$ vai $AT3$manu e-mailu$AT2$. Paldies!",
+        "message": "Kopē tekstu zem un sūti to uz $AT1$problēmu sekotāju$AT2$. Paldies!",
         "placeholders": {
             "at1": { "content": "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>" },
-            "at2": { "content": "</a>" },
-            "at3": { "content": "<a target='_blank' href='mailto:admin@dimden.dev'>" }
+            "at2": { "content": "</a>" }
         }
     },
     "initialization": { "message": "Iesākums" },
