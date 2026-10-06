@@ -651,10 +651,7 @@
     "show_boring_indicators": { "message": "En la página de seguidores/siguiendo, se indicará si el último tweet de cada perfil es un retweet, un tweet citado, no existe o es un tweet viejo" },
     "hide_original_languages":{"message": "Ocultar el idioma original al traducir" },
 	"blocked": { "message": "Bloqueado" },
-<<<<<<< HEAD
-	"use_retweeted_id": { "message": "Al dar \"Me gusta\" o retweetear un retweet, notificar al usuario que lo retweeteó." }
-
-=======
+	"use_retweeted_id": { "message": "Al dar \"Me gusta\" o retweetear un retweet, notificar al usuario que lo retweeteó." },
 	"use_retweeted_id": { "message": "Al dar \"Me gusta\" o retweetear un retweet, notificar al usuario que lo retweeteó." },
     "show_based_in": { "message": "Mostrar la ubicación de la cuenta" },
     "based_in": { "message": "Ubicado en:" },
@@ -667,5 +664,5 @@
     "block_grok_edit": { "message": "Impedir que Grok edite las imágenes que hayas subido" },
     "show_download_button": { "message": "Mostrar el botón de descarga en los tweets con archivos multimedia" },
     "pin_likes_on_navbar": { "message": "Fijar el link \"Me gusta\" en la barra de navegación" }
->>>>>>> 15a9e696c91e2fd0798e07ebfa6d953c45cf8204
 }
+
