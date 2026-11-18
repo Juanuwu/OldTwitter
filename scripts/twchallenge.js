@@ -186,11 +186,9 @@ window.addEventListener("message", (e) => {
             solveCallbacks[id].reject("Solver errored during initialization");
             delete solveCallbacks[id];
         }
-        alert(
-            `There was an error in initializing security header generator:\n${data.error}\nUser Agent: ${navigator.userAgent}\nOldTwitter doesn't allow unsigned requests anymore for your account security.`
-        );
         console.error("Error initializing solver:");
         console.error(data.error);
+        await showInitError(data.error);
         location.href = `${location.pathname}?newtwitter=true`;
     } else if (data.action === "ready") {
         solverReady = true;
@@ -262,6 +260,39 @@ fetch = async function (url, options) {
     return _fetch(url, options);
 };
 
+function findChallengeModuleInHtml(html) {
+    let m = html.match(
+        /\[((?:"[\w-]+",?)+)\]\.forEach\(function\(\w+\)\{var href="(https:\/\/abs\.twimg\.com\/[^"]+\/)"\+\w+\+"\.js";[^}]*?createElement\(['"]script['"]\)/
+    );
+    if (!m) return null;
+    let names = m[1].match(/[\w-]+/g);
+    if (names.length !== 1) return null;
+    return `${m[2]}${names[0]}.js`;
+}
+
+async function findChallengeModule(entryUrl) {
+    let queue = [entryUrl];
+    let seen = new Set();
+    while (queue.length && seen.size < 30) {
+        let url = queue.shift();
+        if (seen.has(url)) continue;
+        seen.add(url);
+        let code = await _fetch(url).then((res) => res.text());
+        if (code.includes("x-client-transaction-id")) {
+            let m = code.match(
+                /import\(["'`](\.{1,2}\/[\w\/-]+\.js)["'`]\)\.then\(\(?(\w+)\)?=>\2\.default\(\)\)/
+            );
+            if (m) return new URL(m[1], url).href;
+        }
+        for (let imp of code.matchAll(
+            /from\s*["'`](\.{1,2}\/[\w\/-]+\.js)["'`]/g
+        )) {
+            queue.push(new URL(imp[1], url).href);
+        }
+    }
+    return null;
+}
+
 async function initChallenge() {
     let generation = solverGeneration;
     if (initGeneration === generation) return false;
@@ -316,8 +347,7 @@ async function initChallenge() {
             solverIframe.contentWindow.postMessage(
                 {
                     action: "init",
-                    challengeCode,
-                    vendorCode,
+                    ...initData,
                     anims,
                     verificationCode: OLDTWITTER_CONFIG.verificationKey,
                 },
@@ -329,15 +359,7 @@ async function initChallenge() {
     } catch (e) {
         console.error(`Error during challenge init:`);
         console.error(e);
-        if (location.hostname === "twitter.com") {
-            alert(
-                `There was an error in initializing security header generator: ${e}\nUser Agent: ${navigator.userAgent}\nOldTwitter doesn't allow unsigned requests anymore for your account security. Currently the main reason for this happening is social network tracker protection blocking the script. Try disabling such settings in your browser and extensions that do that and refresh the page. This also might be because you're either not logged in or using twitter.com instead of x.com.`
-            );
-        } else {
-            alert(
-                `There was an error in initializing security header generator: ${e}\nUser Agent: ${navigator.userAgent}\nOldTwitter doesn't allow unsigned requests anymore for your account security. Currently the main reason for this happening is social network tracker protection blocking the script. Try disabling such settings in your browser and extensions that do that and refresh the page. This can also happen if you're not logged in.`
-            );
-        }
+        await showInitError(e);
         return false;
     }
 }

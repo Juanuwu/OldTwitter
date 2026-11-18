@@ -35,15 +35,31 @@ function createModal(html, className, onclose, canclose) {
     let modal_content = document.createElement("div");
     modal_content.classList.add("modal-content");
     if (className) modal_content.classList.add(className);
+    modal_content.setAttribute("role", "dialog");
+    modal_content.setAttribute("aria-modal", "true");
+    modal_content.tabIndex = -1;
+    modal_content.style.outline = "none";
     modal_content.innerHTML = html;
     modal.appendChild(modal_content);
     let close = document.createElement("span");
     close.classList.add("modal-close");
     close.title = "ESC";
     close.innerHTML = "&times;";
+    close.setAttribute("role", "button");
+    close.setAttribute("aria-label", LOC.close ? LOC.close.message : "Close");
+    close.tabIndex = 0;
+    // focus goes back here when the modal closes
+    let previousFocus = document.activeElement;
     document.body.style.overflowY = "hidden";
     function removeModal() {
         modal.remove();
+        if (
+            previousFocus &&
+            previousFocus !== document.body &&
+            document.contains(previousFocus)
+        ) {
+            previousFocus.focus({ preventScroll: true });
+        }
         let event = new Event("findActiveTweet");
         document.dispatchEvent(event);
         document.removeEventListener("keydown", escapeEvent);
@@ -76,6 +92,8 @@ function createModal(html, className, onclose, canclose) {
     document.addEventListener("keydown", escapeEvent);
     modal_content.appendChild(close);
     document.body.appendChild(modal);
+    // move focus into the modal (callers that focus an input afterwards still win)
+    modal_content.focus({ preventScroll: true });
     return modal;
 }
 async function handleFiles(files, mediaArray, mediaContainer, is_dm = false) {
@@ -97,65 +115,51 @@ async function handleFiles(files, mediaArray, mediaContainer, is_dm = false) {
             }
             videos.push(file);
         } else if (file.type.includes("image")) {
-            // max 5 mb
-            if (
-                file.size > 5000000 ||
-                (window.navigator &&
-                    navigator.connection &&
-                    navigator.connection.type === "cellular" &&
-                    !vars.disableDataSaver)
-            ) {
-                // convert png to jpeg
-                let toBreak = false,
-                    i = 0;
-                while (file.size > 5000000) {
-                    await new Promise((resolve) => {
-                        let canvas = document.createElement("canvas");
-                        let ctx = canvas.getContext("2d");
-                        let img = new Image();
-                        img.onload = function () {
-                            canvas.width = img.width;
-                            canvas.height = img.height;
-                            ctx.drawImage(img, 0, 0);
-                            let dataURL = canvas.toDataURL(
-                                "image/jpeg",
-                                window.navigator &&
-                                    navigator.connection &&
-                                    navigator.connection.type === "cellular" &&
-                                    !vars.disableDataSaver
-                                    ? 0.5 - i * 0.1
-                                    : 0.9 - i * 0.1
-                            );
-                            let blobBin = atob(dataURL.split(",")[1]);
-                            let array = [];
-                            for (let i = 0; i < blobBin.length; i++) {
-                                array.push(blobBin.charCodeAt(i));
-                            }
-                            let newFile = new Blob([new Uint8Array(array)], {
-                                type: "image/jpeg",
-                            });
-                            if (newFile.size > file.size) {
-                                toBreak = true;
-                            } else {
-                                file = newFile;
-                            }
-                            resolve();
-                        };
-                        img.src = URL.createObjectURL(file);
-                    });
-                    if (toBreak || i++ > 5) break;
+            let srcUrl = URL.createObjectURL(file);
+            let srcImg = new Image();
+            srcImg.src = srcUrl;
+            try {
+                await srcImg.decode();
+            } catch (e) {}
+            let scale = Math.min(
+                1,
+                4096 / Math.max(srcImg.naturalWidth, srcImg.naturalHeight)
+            );
+            if (scale < 1 || file.size > 5000000) {
+                let canvas = document.createElement("canvas");
+                canvas.width = Math.round(srcImg.naturalWidth * scale);
+                canvas.height = Math.round(srcImg.naturalHeight * scale);
+                let ctx = canvas.getContext("2d");
+                ctx.imageSmoothingQuality = "high";
+                ctx.drawImage(srcImg, 0, 0, canvas.width, canvas.height);
+                let formats = [
+                    ["image/jpeg", 0.92],
+                    ["image/jpeg", 0.85],
+                ];
+                if (scale < 1 && file.type !== "image/jpeg")
+                    formats.unshift(["image/png"]);
+                let mustEncode = scale < 1;
+                for (let [type, quality] of formats) {
+                    if (!mustEncode && file.size <= 5000000) break;
+                    mustEncode = false;
+                    let blob = await new Promise((resolve) =>
+                        canvas.toBlob(resolve, type, quality)
+                    );
+                    if (blob)
+                        file = new File([blob], file.name, { type: blob.type });
                 }
-                if (file.size > 5000000) {
-                    return alert(LOC.images_max.message);
-                }
+            }
+            URL.revokeObjectURL(srcUrl);
+            if (file.size > 5000000) {
+                return alert(LOC.images_max.message);
             }
             images.push(file);
         }
     }
-    // either up to 4 images or 1 video or 1 gif
+    // either up to 20 images or 1 video or 1 gif
     if (images.length > 0) {
-        if (images.length > 4) {
-            images = images.slice(0, 4);
+        if (images.length > 20) {
+            images = images.slice(0, 20);
         }
         if (videos.length > 0 || gifs.length > 0) {
             return alert(LOC.max_count.message);
@@ -545,16 +549,49 @@ function getPreferredVideoUrl(variants) {
 
 function html(strings, ...values) {
     let str = "";
-    strings.forEach((string, i) => {
-        let value;
-        if (typeof values[i] === "undefined" || values[i] === null) {
+    let inTag = false;
+    let quote = "";
+    function scan(chunk) {
+        for (let i = 0; i < chunk.length; i++) {
+            let c = chunk[i];
+            if (quote) {
+                if (c === quote) quote = "";
+            } else if (!inTag) {
+                if (c === "<") inTag = true;
+            } else if (c === ">") {
+                inTag = false;
+            } else if (c === '"' || c === "'") {
+                quote = c;
+            }
+        }
+    }
+    for (let i = 0; i < strings.length; i++) {
+        scan(strings[i]);
+        str += strings[i];
+        if (i >= values.length) continue;
+        let value = values[i];
+        if (typeof value === "undefined" || value === null) {
             value = "";
         } else {
-            value = String(values[i]);
+            value = String(value);
         }
-
-        str += string + DOMPurify.sanitize(value, { ADD_ATTR: ["target"] });
-    });
+        if (quote) {
+            value = value
+                .replaceAll("&lt;", "<")
+                .replaceAll("&gt;", ">")
+                .replaceAll("&amp;", "&")
+                .replaceAll("&quot;", '"')
+                .replaceAll("&apos;", "'")
+                .replaceAll("&", "&amp;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&apos;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;");
+        } else {
+            value = DOMPurify.sanitize(value, { ADD_ATTR: ["target"] });
+        }
+        str += value;
+    }
     return str;
 }
 
@@ -1126,8 +1163,7 @@ function generateCard(tweet, tweetElement, user) {
                 appElement.classList.add("tweet-app-info");
                 appElement.innerHTML = html`
                     <h3>${escapeHTML(app.title.content)}</h3>
-                    <span>${escapeHTML(app.category.content)}</span>
-                    <br />
+                    ${app.category?.content && `<span>${escapeHTML(app.category.content)}</span><br />`}
                 `;
                 tweetElement
                     .getElementsByClassName("tweet-card")[0]
@@ -2143,6 +2179,45 @@ const video_template = elNew("video", {
     className: "tweet-media-element",
 });
 
+document.addEventListener("click", (e) => {
+    const arrow = e.target.closest && e.target.closest(".tweet-media-carousel-arrow");
+    if (!arrow) return;
+    const scroller = arrow.parentElement.querySelector(".tweet-media");
+    const left = scroller.getBoundingClientRect().left + 5;
+    let offsets = Array.from(
+        scroller.querySelectorAll(".tweet-media-element"),
+        (el) => el.getBoundingClientRect().left - left
+    );
+    const offset = arrow.classList.contains("tweet-media-carousel-next")
+        ? offsets.find((o) => o > 5)
+        : offsets.reverse().find((o) => o < -5);
+    if (offset !== undefined) scroller.scrollBy({ left: offset, behavior: "smooth" });
+});
+document.addEventListener(
+    "scroll",
+    (e) => {
+        if (!(e.target instanceof Element) || !e.target.matches(".tweet-media-carousel > .tweet-media")) return;
+        const scroller = e.target;
+        const carousel = scroller.parentElement;
+        const left = scroller.getBoundingClientRect().left + 5;
+        const atEnd = scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - 5;
+        const offsets = Array.from(scroller.querySelectorAll(".tweet-media-element"), (el) =>
+            Math.abs(el.getBoundingClientRect().left - left)
+        );
+        const active = atEnd && scroller.scrollLeft > 0 ? offsets.length - 1 : offsets.indexOf(Math.min(...offsets));
+        carousel.querySelector(".tweet-media-carousel-prev").hidden = scroller.scrollLeft < 5;
+        carousel.querySelector(".tweet-media-carousel-next").hidden = atEnd;
+        Array.from(carousel.querySelector(".tweet-media-carousel-dots").children).forEach((dot, i) =>
+            dot.classList.toggle("tweet-media-carousel-dot-active", i === active)
+        );
+    },
+    true
+);
+document.addEventListener("mouseover", (e) => {
+    const carousel = e.target.closest && e.target.closest(".tweet-media-carousel");
+    if (carousel) carousel.querySelector(".tweet-media").dispatchEvent(new Event("scroll"));
+});
+
 function renderMedia(t) {
     let _html = "";
     if (!t.extended_entities || !t.extended_entities.media) return "";
@@ -2172,9 +2247,7 @@ function renderMedia(t) {
                 m.original_info.height
             );
             const newClone = img_template.cloneNode(true);
-            const altText = m.ext_alt_text
-                ? escapeHTML(m.ext_alt_text, true)
-                : "";
+            const altText = m.ext_alt_text || "";
             if (altText) {
                 newClone.alt = newClone.title = altText;
             }
@@ -2204,9 +2277,7 @@ function renderMedia(t) {
             let rid = m.id_str + m.media_key;
 
             const newClone = animated_gif_template.cloneNode(true);
-            const altText = m.ext_alt_text
-                ? escapeHTML(m.ext_alt_text, true)
-                : "";
+            const altText = m.ext_alt_text || "";
             if (altText) {
                 newClone.alt = newClone.title = altText;
             }
@@ -2245,9 +2316,7 @@ function renderMedia(t) {
                 m.original_info.height
             );
             const newClone = video_template.cloneNode(true);
-            const altText = m.ext_alt_text
-                ? escapeHTML(m.ext_alt_text, true)
-                : "";
+            const altText = m.ext_alt_text || "";
             if (altText) {
                 newClone.alt = newClone.title = altText;
             }
@@ -2447,13 +2516,45 @@ async function appendUser(u, container, label, usernameClass = "") {
     if (vars.enableTwemoji) twemoji.parse(userElement);
 }
 let lastTweetErrorDate = 0;
-const mediaClasses = [
+async function getOutdatedVersionNotice() {
+    let version = chrome.runtime.getManifest().version;
+    let lastVersion = await _fetch(
+        `https://raw.githubusercontent.com/dimdenGD/OldTwitter/master/manifest.json?t=${Date.now()}`
+    )
+        .then((res) => res.json())
+        .then((res) => res.version)
+        .catch(() => null);
+    if (!lastVersion) return "";
+    let a = version.split(".").map(Number);
+    let b = lastVersion.split(".").map(Number);
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+        if ((a[i] || 0) !== (b[i] || 0)) {
+            if ((a[i] || 0) >= (b[i] || 0)) return "";
+            return `<br><b style="color:#ff4545">${LOC.outdated_version.message} (v${version}, ${LOC.last_version.message}: ${lastVersion}). ${LOC.update_before_reporting.message}</b><br>`;
+        }
+    }
+    return "";
+}
+function mediaCountArray(arr) {
+    return new Proxy(arr, {
+        get: (a, k) =>
+            typeof k === "string" && /^\d+$/.test(k) && +k >= a.length
+                ? a[a.length - 1]
+                : a[k],
+    });
+}
+function useMediaCarousel(t) {
+    let n = t.extended_entities.media.length;
+    return n >= 10 || (vars.mediaCarousel && n > 1);
+}
+
+const mediaClasses = mediaCountArray([
     undefined,
     "tweet-media-element-one",
     "tweet-media-element-two",
     "tweet-media-element-three",
     "tweet-media-element-two",
-];
+]);
 
 function getOriginalImageUrl(image) {
     let src = image.src;
@@ -2482,7 +2583,7 @@ function calculateSize(x, y, max_x, max_y) {
     return [parseInt(x), parseInt(y)];
 }
 
-const sizeFunctions = [
+const sizeFunctions = mediaCountArray([
     undefined,
     (w, h) => calculateSize(w, h, 450, 500),
     (w, h) => calculateSize(w, h, 225, 400),
@@ -2491,27 +2592,15 @@ const sizeFunctions = [
             ? calculateSize(w, h, 225, 400)
             : calculateSize(w, h, 150, 250),
     (w, h) => calculateSize(w, h, 225, 400),
-    (w, h) => calculateSize(w, h, 225, 400),
-    (w, h) => calculateSize(w, h, 225, 400),
-    (w, h) => calculateSize(w, h, 225, 400),
-    (w, h) => calculateSize(w, h, 225, 400),
-    (w, h) => calculateSize(w, h, 225, 400),
-    (w, h) => calculateSize(w, h, 225, 400),
-];
+]);
 
-const quoteSizeFunctions = [
+const quoteSizeFunctions = mediaCountArray([
     undefined,
     (w, h) => calculateSize(w, h, 400, 400),
     (w, h) => calculateSize(w, h, 200, 400),
     (w, h) => calculateSize(w, h, 125, 200),
     (w, h) => calculateSize(w, h, 100, 150),
-    (w, h) => calculateSize(w, h, 100, 150),
-    (w, h) => calculateSize(w, h, 100, 150),
-    (w, h) => calculateSize(w, h, 100, 150),
-    (w, h) => calculateSize(w, h, 100, 150),
-    (w, h) => calculateSize(w, h, 100, 150),
-    (w, h) => calculateSize(w, h, 100, 150),
-];
+]);
 async function appendTweet(t, timelineContainer, options = {}) {
     if (typeof t !== "object") {
         console.error("Tweet is undefined", t, timelineContainer, options);
@@ -3786,7 +3875,9 @@ async function appendTweet(t, timelineContainer, options = {}) {
             if (t.birdwatch.subtitle) {
                 let div = document.createElement("div");
                 div.classList.add("tweet-birdwatch", "box");
-                let text = Array.from(escapeHTML(t.birdwatch.subtitle.text));
+                let text = Array.from(t.birdwatch.subtitle.text).map((c) =>
+                    escapeHTML(c)
+                );
                 for (
                     let e = t.birdwatch.subtitle.entities.length - 1;
                     e >= 0;
@@ -4297,15 +4388,13 @@ async function appendTweet(t, timelineContainer, options = {}) {
             let text = tweetReplyText.value;
             if (text.length === 0 && replyMedia.length === 0) return;
             tweetReplyButton.disabled = true;
-            let uploadedMedia = [];
-            for (let i in replyMedia) {
-                let media = replyMedia[i];
-                try {
+            let uploadResults = await Promise.allSettled(
+                replyMedia.map(async (media) => {
                     media.div.getElementsByClassName(
                         "new-tweet-media-img-progress"
                     )[0].hidden = false;
-                    let mediaId;
-                    if (!media.div.dataset.mediaId) {
+                    let mediaId = media.div.dataset.mediaId;
+                    if (!mediaId) {
                         mediaId = await API.uploadMedia({
                             media_type: media.type,
                             media_category: media.category,
@@ -4318,30 +4407,32 @@ async function appendTweet(t, timelineContainer, options = {}) {
                                 )[0].innerText = `${data.text} (${data.progress}%)`;
                             },
                         });
-                    } else {
-                        mediaId = media.div.dataset.mediaId;
                     }
-                    uploadedMedia.push(mediaId);
                     media.div.getElementsByClassName(
                         "new-tweet-media-img-progress"
                     )[0].innerText = LOC.uploaded.message;
                     media.div.dataset.mediaId = mediaId;
-                } catch (e) {
-                    console.error(e);
-                    alert(e);
-                    for (let j in replyMedia) {
-                        let media = replyMedia[j];
-                        media.div.getElementsByClassName(
-                            "new-tweet-media-img-progress"
-                        )[0].hidden = true;
-                        media.div.getElementsByClassName(
-                            "new-tweet-media-img-progress"
-                        )[0].innerText = "";
-                    }
-                    tweetReplyButton.disabled = false;
-                    return; // cancel tweeting
+                    return mediaId;
+                })
+            );
+            let failedUpload = uploadResults.find(
+                (r) => r.status === "rejected"
+            );
+            if (failedUpload) {
+                console.error(failedUpload.reason);
+                alert(failedUpload.reason);
+                for (let media of replyMedia) {
+                    media.div.getElementsByClassName(
+                        "new-tweet-media-img-progress"
+                    )[0].hidden = true;
+                    media.div.getElementsByClassName(
+                        "new-tweet-media-img-progress"
+                    )[0].innerText = "";
                 }
+                tweetReplyButton.disabled = false;
+                return;
             }
+            let uploadedMedia = uploadResults.map((r) => r.value);
             let tweetObject = {
                 status: text,
                 in_reply_to_status_id: t.id_str,
@@ -4725,15 +4816,13 @@ async function appendTweet(t, timelineContainer, options = {}) {
             tweetQuoteError.innerHTML = "";
             if (text.length === 0 && quoteMedia.length === 0) return;
             tweetQuoteButton.disabled = true;
-            let uploadedMedia = [];
-            for (let i in quoteMedia) {
-                let media = quoteMedia[i];
-                try {
+            let uploadResults = await Promise.allSettled(
+                quoteMedia.map(async (media) => {
                     media.div.getElementsByClassName(
                         "new-tweet-media-img-progress"
                     )[0].hidden = false;
-                    let mediaId;
-                    if (!media.div.dataset.mediaId) {
+                    let mediaId = media.div.dataset.mediaId;
+                    if (!mediaId) {
                         mediaId = await API.uploadMedia({
                             media_type: media.type,
                             media_category: media.category,
@@ -4746,30 +4835,32 @@ async function appendTweet(t, timelineContainer, options = {}) {
                                 )[0].innerText = `${data.text} (${data.progress}%)`;
                             },
                         });
-                    } else {
-                        mediaId = media.div.dataset.mediaId;
                     }
-                    uploadedMedia.push(mediaId);
                     media.div.getElementsByClassName(
                         "new-tweet-media-img-progress"
                     )[0].innerText = LOC.uploaded.message;
                     media.div.dataset.mediaId = mediaId;
-                } catch (e) {
-                    console.error(e);
-                    alert(e);
-                    for (let j in quoteMedia) {
-                        let media = quoteMedia[j];
-                        media.div.getElementsByClassName(
-                            "new-tweet-media-img-progress"
-                        )[0].hidden = true;
-                        media.div.getElementsByClassName(
-                            "new-tweet-media-img-progress"
-                        )[0].innerText = "";
-                    }
-                    tweetQuoteButton.disabled = false;
-                    return; // cancel tweeting
+                    return mediaId;
+                })
+            );
+            let failedUpload = uploadResults.find(
+                (r) => r.status === "rejected"
+            );
+            if (failedUpload) {
+                console.error(failedUpload.reason);
+                alert(failedUpload.reason);
+                for (let media of quoteMedia) {
+                    media.div.getElementsByClassName(
+                        "new-tweet-media-img-progress"
+                    )[0].hidden = true;
+                    media.div.getElementsByClassName(
+                        "new-tweet-media-img-progress"
+                    )[0].innerText = "";
                 }
+                tweetQuoteButton.disabled = false;
+                return;
             }
+            let uploadedMedia = uploadResults.map((r) => r.value);
             let tweetObject = {
                 status: text,
                 attachment_url: `https://twitter.com/${t.user.screen_name}/status/${t.id_str}`,
@@ -4969,6 +5060,17 @@ async function appendTweet(t, timelineContainer, options = {}) {
         if (tweetInteractMoreMenuFollow)
             tweetInteractMoreMenuFollow.addEventListener("click", async () => {
                 if (t.user.following) {
+                    let unfollowMessage;
+                    if (LOC.unfollow_sure.message.includes("$SCREEN_NAME$")) {
+                        unfollowMessage = LOC.unfollow_sure.message.replace(
+                            "$SCREEN_NAME$",
+                            t.user.screen_name
+                        );
+                    } else {
+                        unfollowMessage = `${LOC.unfollow_sure.message} @${t.user.screen_name}?`;
+                    }
+                    let c = confirm(unfollowMessage);
+                    if (!c) return;
                     try {
                         await API.user.unfollow(t.user.screen_name);
                     } catch (e) {
@@ -5627,31 +5729,34 @@ async function appendTweet(t, timelineContainer, options = {}) {
         console.error(e);
         if (Date.now() - lastTweetErrorDate > 1000) {
             lastTweetErrorDate = Date.now();
-            createModal(`
-                <div style="max-width:700px">
-                    <span style="font-size:14px;color:var(--default-text-color)">
-                        <h2 style="margin-top: 0">${
-                            LOC.something_went_wrong.message
-                        }</h2>
-                        ${LOC.tweet_error.message}<br>
-                        ${LOC.error_instructions.message
-                            .replace(
-                                "$AT1$",
-                                "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>"
-                            )
-                            .replace(/\$AT2\$/g, "</a>")
-                            .replace(
-                                "$AT3$",
-                                "<a target='_blank' href='mailto:admin@dimden.dev'>"
-                            )}
-                    </span>
-                    <div class="box" style="font-family:monospace;line-break: anywhere;padding:5px;margin-top:5px;background:rgba(255, 0, 0, 0.1);color:#ff4545">
-                        ${escapeHTML(e.stack ? e.stack : String(e))} at ${
-                t.id_str
-            } (OldTwitter v${chrome.runtime.getManifest().version})
+            getOutdatedVersionNotice().then((outdated) => {
+                createModal(`
+                    <div style="max-width:700px">
+                        <span style="font-size:14px;color:var(--default-text-color)">
+                            <h2 style="margin-top: 0">${
+                                LOC.something_went_wrong.message
+                            }</h2>
+                            ${LOC.tweet_error.message}
+                            ${outdated}
+                            ${LOC.error_instructions.message
+                                .replace(
+                                    "$AT1$",
+                                    "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>"
+                                )
+                                .replace(/\$AT2\$/g, "</a>")
+                                .replace(
+                                    "$AT3$",
+                                    "<a target='_blank' href='mailto:admin@dimden.dev'>"
+                                )}
+                        </span>
+                        <div class="box" style="font-family:monospace;line-break: anywhere;padding:5px;margin-top:5px;background:rgba(255, 0, 0, 0.1);color:#ff4545">
+                            ${escapeHTML(e.stack ? e.stack : String(e))} at ${
+                    t.id_str
+                } (OldTwitter v${chrome.runtime.getManifest().version})
+                        </div>
                     </div>
-                </div>
-            `);
+                `);
+            });
         }
         return null;
     }
@@ -6003,31 +6108,34 @@ function renderNotification(n, options = {}) {
         console.error(e);
         if (Date.now() - lastNotificationErrorDate > 1000) {
             lastNotificationErrorDate = Date.now();
-            createModal(`
-                <div style="max-width:700px">
-                    <span style="font-size:14px;color:var(--default-text-color)">
-                        <h2 style="margin-top: 0">${
-                            LOC.something_went_wrong.message
-                        }</h2>
-                        ${LOC.notifications_error.message}<br>
-                        ${LOC.error_instructions.message
-                            .replace(
-                                "$AT1$",
-                                "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>"
-                            )
-                            .replace(/\$AT2\$/g, "</a>")
-                            .replace(
-                                "$AT3$",
-                                "<a target='_blank' href='mailto:admin@dimden.dev'>"
-                            )}
-                    </span>
-                    <div class="box" style="font-family:monospace;line-break: anywhere;padding:5px;margin-top:5px;background:rgba(255, 0, 0, 0.1);color:#ff4545">
-                        ${escapeHTML(
-                            e.stack ? e.stack : String(e)
-                        )} (OldTwitter v${chrome.runtime.getManifest().version})
+            getOutdatedVersionNotice().then((outdated) => {
+                createModal(`
+                    <div style="max-width:700px">
+                        <span style="font-size:14px;color:var(--default-text-color)">
+                            <h2 style="margin-top: 0">${
+                                LOC.something_went_wrong.message
+                            }</h2>
+                            ${LOC.notifications_error.message}
+                            ${outdated}
+                            ${LOC.error_instructions.message
+                                .replace(
+                                    "$AT1$",
+                                    "<a target='_blank' href='https://github.com/dimdenGD/OldTwitter/issues'>"
+                                )
+                                .replace(/\$AT2\$/g, "</a>")
+                                .replace(
+                                    "$AT3$",
+                                    "<a target='_blank' href='mailto:admin@dimden.dev'>"
+                                )}
+                        </span>
+                        <div class="box" style="font-family:monospace;line-break: anywhere;padding:5px;margin-top:5px;background:rgba(255, 0, 0, 0.1);color:#ff4545">
+                            ${escapeHTML(
+                                e.stack ? e.stack : String(e)
+                            )} (OldTwitter v${chrome.runtime.getManifest().version})
+                        </div>
                     </div>
-                </div>
-            `);
+                `);
+            });
         }
         return null;
     }

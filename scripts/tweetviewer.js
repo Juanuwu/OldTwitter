@@ -1062,15 +1062,13 @@ class TweetViewer {
             document.getElementsByClassName(
                 "new-tweet-button"
             )[0].disabled = true;
-            let uploadedMedia = [];
-            for (let i in this.mediaToUpload) {
-                let media = this.mediaToUpload[i];
-                try {
+            let uploadResults = await Promise.allSettled(
+                this.mediaToUpload.map(async (media) => {
                     media.div.getElementsByClassName(
                         "new-tweet-media-img-progress"
                     )[0].hidden = false;
-                    let mediaId;
-                    if (!media.div.dataset.mediaId) {
+                    let mediaId = media.div.dataset.mediaId;
+                    if (!mediaId) {
                         mediaId = await API.uploadMedia({
                             media_type: media.type,
                             media_category: media.category,
@@ -1083,32 +1081,34 @@ class TweetViewer {
                                 )[0].innerText = `${data.text} (${data.progress}%)`;
                             },
                         });
-                    } else {
-                        mediaId = media.div.dataset.mediaId;
                     }
-                    uploadedMedia.push(mediaId);
                     media.div.getElementsByClassName(
                         "new-tweet-media-img-progress"
                     )[0].innerText = LOC.uploaded.message;
                     media.div.dataset.mediaId = mediaId;
-                } catch (e) {
-                    console.error(e);
-                    alert(e);
-                    for (let j in this.mediaToUpload) {
-                        let media = this.mediaToUpload[j];
-                        media.div.getElementsByClassName(
-                            "new-tweet-media-img-progress"
-                        )[0].hidden = true;
-                        media.div.getElementsByClassName(
-                            "new-tweet-media-img-progress"
-                        )[0].innerText = "";
-                    }
-                    document.getElementsByClassName(
-                        "new-tweet-button"
-                    )[0].disabled = false;
-                    return; // cancel tweeting
+                    return mediaId;
+                })
+            );
+            let failedUpload = uploadResults.find(
+                (r) => r.status === "rejected"
+            );
+            if (failedUpload) {
+                console.error(failedUpload.reason);
+                alert(failedUpload.reason);
+                for (let media of this.mediaToUpload) {
+                    media.div.getElementsByClassName(
+                        "new-tweet-media-img-progress"
+                    )[0].hidden = true;
+                    media.div.getElementsByClassName(
+                        "new-tweet-media-img-progress"
+                    )[0].innerText = "";
                 }
+                document.getElementsByClassName(
+                    "new-tweet-button"
+                )[0].disabled = false;
+                return;
             }
+            let uploadedMedia = uploadResults.map((r) => r.value);
             let tweetObject = {
                 status: tweet,
                 in_reply_to_status_id: replyTweet.id_str,
@@ -1604,33 +1604,66 @@ class TweetViewer {
                     : ``}
                 ${t.extended_entities && t.extended_entities.media
                     ? html`
-                          <div class="tweet-media">
-                              ${t.extended_entities.media.length === 1 &&
-                              t.extended_entities.media[0].type === "video"
-                                  ? html`
-                                        <div
-                                            class="tweet-media-video-overlay tweet-button"
-                                        >
-                                            <svg
-                                                viewBox="0 0 24 24"
-                                                class="tweet-media-video-overlay-play"
-                                            >
-                                                <g>
-                                                    <path
-                                                        class="svg-play-path"
-                                                        d="M8 5v14l11-7z"
-                                                    ></path>
-                                                    <path
-                                                        d="M0 0h24v24H0z"
-                                                        fill="none"
-                                                    ></path>
-                                                </g>
-                                            </svg>
+                          ${useMediaCarousel(t)
+                              ? html`
+                                    <div class="tweet-media-carousel">
+                                        <div class="tweet-media">
+                                            ${renderMedia(t)}
                                         </div>
-                                    `
-                                  : ""}
-                              ${renderMedia(t)}
-                          </div>
+                                        <button
+                                            type="button"
+                                            class="tweet-media-carousel-arrow tweet-media-carousel-prev"
+                                            hidden
+                                        ></button>
+                                        <button
+                                            type="button"
+                                            class="tweet-media-carousel-arrow tweet-media-carousel-next"
+                                        ></button>
+                                        <div class="tweet-media-carousel-dots">
+                                            ${t.extended_entities.media
+                                                .map(
+                                                    (m, i) =>
+                                                        `<span${
+                                                            i === 0
+                                                                ? ' class="tweet-media-carousel-dot-active"'
+                                                                : ""
+                                                        }></span>`
+                                                )
+                                                .join("")}
+                                        </div>
+                                    </div>
+                                `
+                              : html`
+                                    <div class="tweet-media">
+                                        ${t.extended_entities.media.length ===
+                                            1 &&
+                                        t.extended_entities.media[0].type ===
+                                            "video"
+                                            ? html`
+                                                  <div
+                                                      class="tweet-media-video-overlay tweet-button"
+                                                  >
+                                                      <svg
+                                                          viewBox="0 0 24 24"
+                                                          class="tweet-media-video-overlay-play"
+                                                      >
+                                                          <g>
+                                                              <path
+                                                                  class="svg-play-path"
+                                                                  d="M8 5v14l11-7z"
+                                                              ></path>
+                                                              <path
+                                                                  d="M0 0h24v24H0z"
+                                                                  fill="none"
+                                                              ></path>
+                                                          </g>
+                                                      </svg>
+                                                  </div>
+                                              `
+                                            : ""}
+                                        ${renderMedia(t)}
+                                    </div>
+                                `}
                           ${t.extended_entities &&
                           t.extended_entities.media &&
                           t.extended_entities.media.some(
@@ -3173,7 +3206,9 @@ class TweetViewer {
         ) {
             let div = document.createElement("div");
             div.classList.add("tweet-birdwatch", "box");
-            let text = Array.from(escapeHTML(t.birdwatch.subtitle.text));
+            let text = Array.from(t.birdwatch.subtitle.text).map((c) =>
+                escapeHTML(c)
+            );
             for (
                 let e = t.birdwatch.subtitle.entities.length - 1;
                 e >= 0;
@@ -3583,15 +3618,13 @@ class TweetViewer {
             let text = tweetReplyText.value;
             if (text.length === 0 && replyMedia.length === 0) return;
             tweetReplyButton.disabled = true;
-            let uploadedMedia = [];
-            for (let i in replyMedia) {
-                let media = replyMedia[i];
-                try {
+            let uploadResults = await Promise.allSettled(
+                replyMedia.map(async (media) => {
                     media.div.getElementsByClassName(
                         "new-tweet-media-img-progress"
                     )[0].hidden = false;
-                    let mediaId;
-                    if (!media.div.dataset.mediaId) {
+                    let mediaId = media.div.dataset.mediaId;
+                    if (!mediaId) {
                         mediaId = await API.uploadMedia({
                             media_type: media.type,
                             media_category: media.category,
@@ -3604,30 +3637,32 @@ class TweetViewer {
                                 )[0].innerText = `${data.text} (${data.progress}%)`;
                             },
                         });
-                    } else {
-                        mediaId = media.div.dataset.mediaId;
                     }
-                    uploadedMedia.push(mediaId);
                     media.div.getElementsByClassName(
                         "new-tweet-media-img-progress"
                     )[0].innerText = LOC.uploaded.message;
                     media.div.dataset.mediaId = mediaId;
-                } catch (e) {
-                    console.error(e);
-                    alert(e);
-                    for (let j in replyMedia) {
-                        let media = replyMedia[j];
-                        media.div.getElementsByClassName(
-                            "new-tweet-media-img-progress"
-                        )[0].hidden = true;
-                        media.div.getElementsByClassName(
-                            "new-tweet-media-img-progress"
-                        )[0].innerText = "";
-                    }
-                    tweetReplyButton.disabled = false;
-                    return; // cancel tweeting
+                    return mediaId;
+                })
+            );
+            let failedUpload = uploadResults.find(
+                (r) => r.status === "rejected"
+            );
+            if (failedUpload) {
+                console.error(failedUpload.reason);
+                alert(failedUpload.reason);
+                for (let media of replyMedia) {
+                    media.div.getElementsByClassName(
+                        "new-tweet-media-img-progress"
+                    )[0].hidden = true;
+                    media.div.getElementsByClassName(
+                        "new-tweet-media-img-progress"
+                    )[0].innerText = "";
                 }
+                tweetReplyButton.disabled = false;
+                return;
             }
+            let uploadedMedia = uploadResults.map((r) => r.value);
             let tweetObject = {
                 status: text,
                 in_reply_to_status_id: t.id_str,
@@ -3972,15 +4007,13 @@ class TweetViewer {
             tweetQuoteError.innerHTML = "";
             if (text.length === 0 && quoteMedia.length === 0) return;
             tweetQuoteButton.disabled = true;
-            let uploadedMedia = [];
-            for (let i in quoteMedia) {
-                let media = quoteMedia[i];
-                try {
+            let uploadResults = await Promise.allSettled(
+                quoteMedia.map(async (media) => {
                     media.div.getElementsByClassName(
                         "new-tweet-media-img-progress"
                     )[0].hidden = false;
-                    let mediaId;
-                    if (!media.div.dataset.mediaId) {
+                    let mediaId = media.div.dataset.mediaId;
+                    if (!mediaId) {
                         mediaId = await API.uploadMedia({
                             media_type: media.type,
                             media_category: media.category,
@@ -3993,30 +4026,32 @@ class TweetViewer {
                                 )[0].innerText = `${data.text} (${data.progress}%)`;
                             },
                         });
-                    } else {
-                        mediaId = media.div.dataset.mediaId;
                     }
-                    uploadedMedia.push(mediaId);
                     media.div.getElementsByClassName(
                         "new-tweet-media-img-progress"
                     )[0].innerText = LOC.uploaded.message;
                     media.div.dataset.mediaId = mediaId;
-                } catch (e) {
-                    console.error(e);
-                    alert(e);
-                    for (let j in quoteMedia) {
-                        let media = quoteMedia[j];
-                        media.div.getElementsByClassName(
-                            "new-tweet-media-img-progress"
-                        )[0].hidden = true;
-                        media.div.getElementsByClassName(
-                            "new-tweet-media-img-progress"
-                        )[0].innerText = "";
-                    }
-                    tweetQuoteButton.disabled = false;
-                    return; // cancel tweeting
+                    return mediaId;
+                })
+            );
+            let failedUpload = uploadResults.find(
+                (r) => r.status === "rejected"
+            );
+            if (failedUpload) {
+                console.error(failedUpload.reason);
+                alert(failedUpload.reason);
+                for (let media of quoteMedia) {
+                    media.div.getElementsByClassName(
+                        "new-tweet-media-img-progress"
+                    )[0].hidden = true;
+                    media.div.getElementsByClassName(
+                        "new-tweet-media-img-progress"
+                    )[0].innerText = "";
                 }
+                tweetQuoteButton.disabled = false;
+                return;
             }
+            let uploadedMedia = uploadResults.map((r) => r.value);
             let tweetObject = {
                 status: text,
                 attachment_url: `https://twitter.com/${t.user.screen_name}/status/${t.id_str}`,
@@ -4206,6 +4241,17 @@ class TweetViewer {
         if (tweetInteractMoreMenuFollow)
             tweetInteractMoreMenuFollow.addEventListener("click", async () => {
                 if (t.user.following) {
+                    let unfollowMessage;
+                    if (LOC.unfollow_sure.message.includes("$SCREEN_NAME$")) {
+                        unfollowMessage = LOC.unfollow_sure.message.replace(
+                            "$SCREEN_NAME$",
+                            t.user.screen_name
+                        );
+                    } else {
+                        unfollowMessage = `${LOC.unfollow_sure.message} @${t.user.screen_name}?`;
+                    }
+                    let c = confirm(unfollowMessage);
+                    if (!c) return;
                     await API.user.unfollow(t.user.screen_name);
                     t.user.following = false;
                     if (LOC.follow_user.message.includes("$SCREEN_NAME$")) {

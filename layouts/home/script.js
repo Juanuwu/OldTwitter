@@ -371,6 +371,7 @@ function renderNewTweetsButton() {
         `;
         document.getElementById('new-tweets').hidden = false;
         document.getElementById('new-tweets').innerText = `${LOC.see_new_tweets.message}`;
+        document.getElementById('new-tweets').setAttribute('aria-label', `${LOC.see_new_tweets.message} (${timeline.toBeUpdated})`);
         if(vars.updateTimelineAutomatically) {
             setTimeout(() => {
                 document.getElementById('new-tweets').click();
@@ -428,7 +429,9 @@ setTimeout(async () => {
     }
     try {
         let lastNewTweetPress = Date.now();
-        document.getElementById('new-tweets').addEventListener('click', () => {
+        document.getElementById('new-tweets').addEventListener('click', e => {
+            // only move focus when a person pressed it, not on automatic updates
+            let userPressed = e.isTrusted || document.activeElement === e.currentTarget;
             if(Date.now() - lastNewTweetPress > 60000 * 60 * 4) { // 4 hours
                 lastNewTweetPress = Date.now();
                 timeline.toBeUpdated = 0;
@@ -443,10 +446,16 @@ setTimeout(async () => {
                 return;
             }
             lastNewTweetPress = Date.now();
+            let newCount = timeline.toBeUpdated;
             timeline.toBeUpdated = 0;
             timeline.data = [...timeline.dataToUpdate, ...timeline.data];
             renderNewTweetsButton();
-            renderTimeline({mode: 'prepend', data: timeline.dataToUpdate });
+            renderTimeline({mode: 'prepend', data: timeline.dataToUpdate }).then(() => {
+                if(!userPressed) return;
+                let firstTweet = document.querySelector('#timeline .tweet');
+                if(firstTweet) firstTweet.focus();
+                if(typeof a11yAnnounce === 'function') a11yAnnounce(LOC.new_tweets_shown.message.replace('$COUNT$', newCount));
+            });
             timeline.dataToUpdate = [];
         });
     } catch(e) {
@@ -918,41 +927,37 @@ setTimeout(async () => {
         let tweet = document.getElementById('new-tweet-text').value;
         if (tweet.length === 0 && mediaToUpload.length === 0) return;
         newTweetButton.disabled = true;
-        let uploadedMedia = [];
-        for (let i in mediaToUpload) {
-            let media = mediaToUpload[i];
-            try {
-                media.div.getElementsByClassName('new-tweet-media-img-progress')[0].hidden = false;
-                let mediaId;
-                if(!media.div.dataset.mediaId) {
-                    mediaId = await API.uploadMedia({
-                        media_type: media.type,
-                        media_category: media.category,
-                        media: media.data,
-                        alt: media.alt,
-                        cw: media.cw,
-                        loadCallback: data => {
-                            media.div.getElementsByClassName('new-tweet-media-img-progress')[0].innerText = `${data.text} (${data.progress}%)`;
-                        }
-                    });
-                } else {
-                    mediaId = media.div.dataset.mediaId;
-                }
-                uploadedMedia.push(mediaId);
-                media.div.getElementsByClassName('new-tweet-media-img-progress')[0].innerText = LOC.uploaded.message;
-                media.div.dataset.mediaId = mediaId;
-            } catch (e) {
-                console.error(e);
-                alert(e);
-                for(let j in mediaToUpload) {
-                    let media = mediaToUpload[j];
-                    media.div.getElementsByClassName('new-tweet-media-img-progress')[0].hidden = true;
-                    media.div.getElementsByClassName('new-tweet-media-img-progress')[0].innerText = '';
-                }
-                newTweetButton.disabled = false;
-                return; // cancel tweeting
+        let uploadResults = await Promise.allSettled(mediaToUpload.map(async media => {
+            media.div.getElementsByClassName('new-tweet-media-img-progress')[0].hidden = false;
+            let mediaId = media.div.dataset.mediaId;
+            if(!mediaId) {
+                mediaId = await API.uploadMedia({
+                    media_type: media.type,
+                    media_category: media.category,
+                    media: media.data,
+                    alt: media.alt,
+                    cw: media.cw,
+                    loadCallback: data => {
+                        media.div.getElementsByClassName('new-tweet-media-img-progress')[0].innerText = `${data.text} (${data.progress}%)`;
+                    }
+                });
             }
+            media.div.getElementsByClassName('new-tweet-media-img-progress')[0].innerText = LOC.uploaded.message;
+            media.div.dataset.mediaId = mediaId;
+            return mediaId;
+        }));
+        let failedUpload = uploadResults.find(r => r.status === 'rejected');
+        if(failedUpload) {
+            console.error(failedUpload.reason);
+            alert(failedUpload.reason);
+            for(let media of mediaToUpload) {
+                media.div.getElementsByClassName('new-tweet-media-img-progress')[0].hidden = true;
+                media.div.getElementsByClassName('new-tweet-media-img-progress')[0].innerText = '';
+            }
+            newTweetButton.disabled = false;
+            return;
         }
+        let uploadedMedia = uploadResults.map(r => r.value);
         let card;
         if(pollToUpload) {
             let pollVariants = pollToUpload.variants.filter(i => i);
